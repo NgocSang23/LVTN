@@ -1,0 +1,52 @@
+/* Toast message khi thêm phần mềm thành công hay thất bại*/
+/* .move-from-top {
+    position: fixed;
+    top: 0;
+    right: calc(50% - 150px);
+    z-index: 99999;
+    animation: moveFromTop 0.5s forwards;
+} */
+
+/* .alert {
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.fade-out {
+    opacity: 0;
+    transition: opacity 0.5s ease-out;
+} */
+
+/* @keyframes moveFromTop {
+    from {
+        transform: translateY(0%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0%);
+        opacity: 1;
+    }
+} */
+
+.move-from-top {
+    position: fixed; /* Giữ thông báo ở vị trí cố định khi cuộn trang */
+    top: 20px; /* Điều chỉnh vị trí từ trên xuống */
+    left: 50%; /* Canh giữa theo chiều ngang */
+    transform: translateX(-50%); /* Canh giữa theo chiều ngang */
+    z-index: 1050; /* Đảm bảo thông báo nằm trên các phần tử khác */
+    opacity: 1; /* Ban đầu hiển thị */
+    transition: opacity 0.5s ease-in-out; /* Hiệu ứng mờ dần */
+}
+
+.move-from-top.hidden {
+    opacity: 0; /* Mờ dần */
+}
+
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+.toast-fadeout {
+    animation: fadeOut 1s forwards;
+}

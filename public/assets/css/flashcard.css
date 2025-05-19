@@ -1,0 +1,29 @@
+.flip-card {
+    perspective: 1000px;
+}
+
+.flip-card .card-body {
+    transition: transform 0.5s;
+    transform-style: preserve-3d;
+}
+
+.flip-card .front-card-body {
+    backface-visibility: hidden;
+}
+
+.flip-card .back-card-body {
+    transform: rotateY(180deg);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    backface-visibility: hidden;
+}
+
+.flip-card.flipped .front-card-body {
+    transform: rotateY(180deg);
+}
+
+.flip-card.flipped .back-card-body {
+    transform: rotateY(360deg);
+}

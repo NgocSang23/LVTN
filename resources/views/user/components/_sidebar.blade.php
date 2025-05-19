@@ -1,0 +1,62 @@
+<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ route('user.dashboard') }}">
+        <div class="sidebar-brand-icon rotate-n-15">
+            <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <div class="sidebar-brand-text mx-3">Studying For Exams</div>
+    </a>
+
+    <hr class="sidebar-divider my-0">
+
+    <li class="nav-item active">
+        <a class="nav-link" href="{{ route('user.dashboard') }}">
+            <i class="fa-solid fa-house"></i>
+            <span>Trang chủ</span></a>
+    </li>
+    <li class="nav-item active">
+        <a class="nav-link" href="{{ route('user.library_define_essay') }}">
+            <i class="fa-solid fa-book"></i>
+            <span>Thư viện của bạn</span></a>
+    </li>
+    <li class="nav-item active">
+        <a class="nav-link" href="{{ route('user.history_define_essay') }}">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Kết quả học tập</span></a>
+    </li>
+    <li class="nav-item active">
+        <a class="nav-link" href="">
+            <i class="fa-solid fa-bell"></i>
+            <span>Thông báo</span></a>
+    </li>
+
+    <hr class="sidebar-divider">
+
+    <div class="sidebar-heading">
+        Bắt đầu tại đây
+    </div>
+
+    <li class="nav-item active">
+        <a class="nav-link" href="{{ route('flashcard_define_essay.create') }}">
+            <i class="fas fa-fw fa-cog"></i>
+            <span>Khái niệm / Tự luận</span>
+        </a>
+    </li>
+
+    <li class="nav-item active">
+        <a class="nav-link" href="{{ route('flashcard_multiple_choice.create') }}">
+            <i class="fas fa-fw fa-cog"></i>
+            <span>Trắc nghiệm</span>
+        </a>
+    </li>
+
+    <li class="nav-item active">
+        <a class="nav-link" href="#">
+            <i class="fas fa-fw fa-wrench"></i>
+            <span>Lời giải chuyên gia</span>
+        </a>
+    </li>
+    <div class="text-center d-none d-md-inline">
+        <button class="rounded-circle border-0" id="sidebarToggle"></button>
+    </div>
+</ul>
