@@ -24,6 +24,7 @@
     <link href="{{ asset('assets/css/sb-admin-2.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/css/flashcard.css') }}" rel="stylesheet">
 
+
     @yield('css')
     <style>
         input.form-control:focus {
@@ -59,6 +60,7 @@
     <script src="{{ asset('assets/js/sb-admin-2.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+
     @yield('js')
 </body>
 

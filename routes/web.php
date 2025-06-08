@@ -62,13 +62,30 @@ Route::group(['prefix' => 'user', 'middleware' => 'auth'], function() {
     Route::post('/ai/check-answer', [FlashcardDefineEssayController::class, 'storeUserAnswer'])->name('user.answer_user');
 
     Route::get('flashcard_define_essay/game_match/{ids}', [FlashcardGameController::class, 'match'])->name('game.match');
+    Route::get('flashcard_define_essay/game_study/{ids}', [FlashcardGameController::class, 'study'])->name('game.study');
+    Route::get('flashcard_define_essay/game_check/{ids}', [FlashcardGameController::class, 'check'])->name('game.check');
 
     Route::get('/search', [SearchController::class, 'show'])->name('user.search');
 });
 
+Route::prefix('define')->name('define.')->group(function () {
+    Route::get('/{id}/edit', [FlashcardDefineEssayController::class, 'editAll'])->name('edit');
+    Route::delete('/{id}', [FlashcardDefineEssayController::class, 'destroyAll'])->name('destroy');
+});
+
+
 // Xử lý đăng nhập gg
 Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+
+
+
+// Admin
+// Route cho admin – chỉ load một Vue SPA
+Route::get('/admin/{any?}', function () {
+    return view('admin.welcome'); // Trả về file có Vue
+})->where('any', '.*');
+
 
 // Route::get('/chatbot', function () {
 //     return view('chat_bot');

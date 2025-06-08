@@ -11,7 +11,12 @@ class Topic extends Model
 
     protected $fillable = [
         'title',
-        'subject_id'
+        'embedding' => 'array',
+        'subject_id '
+    ];
+
+    protected $casts = [
+        'embedding' => 'array',
     ];
 
     public function Subject() {

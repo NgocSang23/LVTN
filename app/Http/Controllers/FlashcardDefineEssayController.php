@@ -320,4 +320,38 @@ class FlashcardDefineEssayController extends Controller
 
         return redirect()->route('user.dashboard')->with('success', 'Xóa câu hỏi thành công!');
     }
+
+    public function destroyAll(string $card_id)
+    {
+        // Tìm thẻ theo card_id
+        $card = Card::find($card_id);
+        if (!$card) {
+            return redirect()->back()->with('error', 'Không tìm thấy thẻ!');
+        }
+
+        // Lấy tất cả câu hỏi của thẻ này
+        $questions = Question::where('card_id', $card_id)->get();
+
+        foreach ($questions as $question) {
+            // Xóa các ảnh liên quan
+            $question->images()->delete();
+
+            // Xóa các câu trả lời
+            $question->answers()->delete();
+
+            // Xóa câu trả lời người dùng nếu có
+            $answerUser = AnswerUser::where('question_id', $question->id)->first();
+            if ($answerUser) {
+                $answerUser->delete();
+            }
+
+            // Xóa câu hỏi
+            $question->delete();
+        }
+
+        // Sau khi xóa hết câu hỏi, xóa thẻ
+        $card->delete();
+
+        return redirect()->route('user.dashboard')->with('success', 'Xóa toàn bộ câu hỏi và thẻ thành công!');
+    }
 }

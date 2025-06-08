@@ -5,42 +5,29 @@ namespace App\Http\Controllers;
 use App\Models\Card;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class FlashcardGameController extends Controller
 {
     public function match($ids)
     {
-        // Tách chuỗi các id thành mảng, ví dụ: "1,2,3" => [1, 2, 3]
         $idsArray = explode(',', $ids);
 
-        // Truy vấn cơ sở dữ liệu để lấy các flashcard có id nằm trong $idsArray\
         $cards = Card::whereIn('id', $idsArray)
             ->with(['question', 'question.topic', 'question.answers'])
             ->get();
 
-        Log::debug('Cards: ', $cards->toArray());
-
-        // Tạo mảng chứa các cặp từ (pairs) từ dữ liệu các card
         $pairs = [];
 
-        // Duyệt qua từng card đã lấy để tạo cặp từ
         foreach ($cards as $card) {
-            // Lấy nội dung câu hỏi tiếng Anh
             $question = $card->question->content;
+            $answer = $card->question->answers->first();
 
-            // Lấy danh sách câu trả lời tương ứng (thường chỉ có 1 câu đúng)
-            $answers = $card->question->answers;
-
-            // Lấy câu trả lời đầu tiên (giả định là câu đúng, hoặc đơn giản hoá dữ liệu)
-            $answer = $answers->first();
-
-            // Nếu có câu trả lời thì lấy nội dung (thường là nghĩa tiếng Việt)
-            $answerContent = $answer ? $answer->content : null;
-
-            if ($answerContent) {
+            if ($answer) {
                 $pairs[] = [
-                    'question' => $question,      // Câu hỏi tiếng Anh
-                    'vi' => $answerContent,       // Câu trả lời tiếng Việt
+                    'question' => $question,
+                    'vi' => $answer->content,
                 ];
             }
         }
@@ -51,16 +38,31 @@ class FlashcardGameController extends Controller
                 ->with('message', 'Không có cặp từ nào trong chủ đề này.');
         }
 
-        return view('user.flashcard_game.match', compact('pairs', 'cards'));
-    }
+        // ✅ Phân trang thủ công
+        $perPage = 6;
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $currentItems = array_slice($pairs, ($currentPage - 1) * $perPage, $perPage);
 
-    public function check()
-    {
-        return view('user.flashcard_game.check');
+        $paginator = new LengthAwarePaginator(
+            $currentItems,
+            count($pairs),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return view('user.flashcard_game.match', [
+            'pairs' => $paginator, // phân trang
+        ]);
     }
 
     public function study()
     {
         return view('user.flashcard_game.study');
+    }
+
+    public function check()
+    {
+        return view('user.flashcard_game.check');
     }
 }

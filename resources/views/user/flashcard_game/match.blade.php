@@ -71,9 +71,34 @@
         .reload-btn:hover {
             background-color: #0056b3;
         }
+
+        .pagination-container .pagination {
+            margin-bottom: 0;
+        }
+
+        .pagination .page-link {
+            border-radius: 50px !important;
+            margin: 0 3px;
+            transition: all 0.2s;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+
+        .pagination .page-link:hover {
+            background-color: #e9ecef;
+        }
+
+        .pagination .pagination-summary {
+            display: none;
+        }
     </style>
 
-    <div class="container text-center mt-4">
+    <div class="container text-center mt-4 d-flex flex-column" style="min-height: 90vh;">
+        {{-- Thanh điều hướng và tiêu đề --}}
         <div class="d-flex align-items-center mb-3">
             <a href="{{ route('user.dashboard') }}" class="btn btn-outline-primary d-flex align-items-center me-3">
                 <span class="me-2">🔙</span> Trở lại
@@ -87,27 +112,44 @@
         {{-- PHP xử lý dữ liệu từ controller --}}
         @php
             $cards = [];
-            // Duyệt từng cặp từ và đưa vào mảng cards (question: EN, word: VI)
             foreach ($pairs as $item) {
                 $cards[] = ['type' => 'question', 'text' => $item['question'], 'match' => $item['vi']];
                 $cards[] = ['type' => 'answer', 'text' => $item['vi'], 'match' => $item['vi']];
             }
 
-            shuffle($cards); // Xáo trộn ngẫu nhiên các cặp
+            shuffle($cards);
         @endphp
 
-        <div class="game-grid">
-            @foreach ($cards as $card)
-                <div class="grid-item">
-                    <button
-                        class="btn match-btn w-100 p-3 shadow-sm rounded-3 {{ $card['type'] === 'question' ? 'question-btn' : 'answer-btn' }} "
-                        data-question="{{ $card['type'] === 'question' ? $card['text'] : '' }}"
-                        data-word="{{ $card['match'] }}">
-                        {{ $card['text'] }}
-                    </button>
-                </div>
-            @endforeach
+        {{-- Phần game grid (nội dung chiếm phần còn lại) --}}
+        <div class="flex-grow-1">
+            <div class="game-grid">
+                @foreach ($cards as $card)
+                    <div class="grid-item">
+                        <button
+                            class="btn match-btn w-100 p-3 shadow-sm rounded-3 {{ $card['type'] === 'question' ? 'question-btn' : 'answer-btn' }}"
+                            data-question="{{ $card['type'] === 'question' ? $card['text'] : '' }}"
+                            data-word="{{ $card['match'] }}" style="font-size: 16px;">
+                            {{ $card['text'] }}
+                        </button>
+                    </div>
+                @endforeach
+            </div>
         </div>
+
+        {{-- Phân trang luôn ở cuối --}}
+        @if ($pairs->hasPages())
+            <div class="m-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="text-muted small fst-italic">
+                    <span>Trang <strong>{{ $pairs->currentPage() }}</strong> /
+                        <strong>{{ $pairs->lastPage() }}</strong></span>
+                    &mdash;
+                    <span>Tổng <strong>{{ $pairs->total() }}</strong> cặp</span>
+                </div>
+                <div class="pagination-container shadow-sm rounded-3 px-3 py-1 bg-white">
+                    {{ $pairs->links('pagination::bootstrap-5') }}
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Modal hiển thị khi hoàn thành trò chơi --}}

@@ -28,10 +28,35 @@
             <h2 class="h4 mb-4">📘 Khái niệm / định nghĩa</h2>
             <div class="row g-4">
                 @forelse ($card_defines as $card_define)
-                    <div class="col-12 col-sm-6 col-lg-4">
-                        <a href="{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}"
-                            class="text-decoration-none text-dark">
-                            <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d">
+                    <div class="col-12 col-sm-6 col-lg-4 position-relative">
+                        <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d">
+                            <div class="dropdown position-absolute top-0 end-0 p-3" style="z-index: 9999;"> <span
+                                    data-bs-toggle="dropdown" role="button"
+                                    style="cursor: pointer; font-size: 20px; line-height: 1;">
+                                    ⋮
+                                </span>
+
+                                <ul class="dropdown-menu dropdown-menu-start">
+                                    <li>
+                                        <a class="dropdown-item"
+                                            href="{{ route('define.edit', ['id' => $card_define['first_card']->id]) }}">✏️
+                                            Chỉnh sửa</a>
+                                    </li>
+                                    <li>
+                                        <form id="deleteForm" method="POST" action="#">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="dropdown-item text-danger"
+                                                onclick="confirmDelete('{{ route('define.destroy', ['id' => $card_define['first_card']->id]) }}')">
+                                                🗑️ Xoá toàn bộ thẻ
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <a href="{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}"
+                                class="text-decoration-none text-dark">
                                 <div class="d-flex align-items-center">
                                     <img src="./assets/img/card_define.jpg" alt="Icon"
                                         class="rounded-circle bg-primary p-1" width="50" height="50"
@@ -48,8 +73,8 @@
                                             {{ $card_define['first_card']->created_at->format('Y-m-d') }}</small>
                                     </div>
                                 </div>
-                            </div>
-                        </a>
+                            </a>
+                        </div>
                     </div>
                 @empty
                     <p class="text-muted">Chưa có thẻ nào được tạo.</p>
@@ -131,6 +156,32 @@
         </div>
     </div>
 
+    {{-- Modal xóa --}}
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" style="border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: none;">
+                <div class="modal-header"
+                    style="background: linear-gradient(135deg, #ff5f6d, #ffc371); color: white; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <h5 class="modal-title" style="font-weight: 600;">⚠️ Xác nhận xóa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
+                </div>
+                <div class="modal-body" style="font-size: 1rem; color: #333;">
+                    <p>Bạn có chắc chắn muốn xóa câu hỏi này không?</p>
+                </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <form id="deleteForm" method="POST" action="">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">Xóa</button>
+                    </form>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        style="padding: 6px 20px; border-radius: 6px;">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Xác Nhận Làm Bài Kiểm Tra -->
     <div class="modal fade" id="confirmTestModal" tabindex="-1" aria-labelledby="confirmTestLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -149,7 +200,8 @@
                     <p class="mb-2"><strong>📌 Chủ đề:</strong> <span id="testTopic" class="fw-semibold"></span></p>
                     <p class="mb-2"><strong>⏳ Thời gian:</strong> <span id="testTime" class="fw-semibold"></span> phút
                     </p>
-                    <p class="mb-2"><strong>📖 Số câu hỏi:</strong> <span id="testQuestions" class="fw-semibold"></span>
+                    <p class="mb-2"><strong>📖 Số câu hỏi:</strong> <span id="testQuestions"
+                            class="fw-semibold"></span>
                         câu</p>
                     <p class="mb-2"><strong>👤 Tác giả:</strong> <span id="testAuthor" class="fw-semibold"></span></p>
                     <p class="mb-3"><strong>📅 Ngày tạo:</strong> <span id="testDate" class="fw-semibold"></span></p>
@@ -187,6 +239,20 @@
             myModal.show();
         }
     </script>
+
+    <script>
+        function confirmDelete(url) {
+            // Cập nhật action của form trong modal
+            const form = document.getElementById('deleteForm');
+            form.action = url;
+
+            // Hiện modal xác nhận xóa
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            deleteModal.show();
+        }
+    </script>
+
+
 
     {{-- Tìm kiếm --}}
     {{-- <script>
