@@ -29,20 +29,35 @@
     </style>
 
     <div class="bg-light d-flex align-items-center justify-content-center">
-        <div class="container d-flex flex-column">
-            <div class="mb-3 d-flex back_btn">
+        <div class="container py-4" style="max-width: 900px;">
+
+            {{-- Thanh tiêu đề và nút quay lại --}}
+            <div class="d-flex align-items-center mb-3 header-bar">
                 <a href="{{ route('user.dashboard') }}" class="btn btn-primary me-3">&lt;</a>
-                <h2 class="topic_title align-content-start m-0"></h2>
-            </div>
-            <div class="d-flex justify-content-center mb-3 gap-3">
-                <a href="{{ route('game.match', ['ids' => implode(',', $cards->pluck('id')->toArray())]) }}"
-                    class="btn btn-outline-success px-4 py-2">🧩 Tìm cặp</a>
-                <a href="#" class="btn btn-outline-primary px-4 py-2">📚 Học tập</a>
-                <a href="#" class="btn btn-outline-danger px-4 py-2">📝 Kiểm tra</a>
+                <h2 class="topic_title m-0"></h2>
             </div>
 
-            <div class="d-flex align-items-center flex-column">
+            {{-- Các nút chế độ học --}}
+            <div class="d-flex justify-content-center mb-4 gap-3 mode-buttons flex-wrap">
+                @php
+                    $encodedIds = base64_encode(implode(',', $cards->pluck('id')->toArray()));
+                @endphp
+
+                <a href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}"
+                    class="btn btn-outline-warning px-4 py-2">🃏 Flashcard</a>
+                {{-- <a href="{{ route('game.essay', ['ids' => $encodedIds]) }}" class="btn btn-outline-dark px-4 py-2">✏️ Tự luận</a> --}}
+                <a href="{{ route('game.match', ['ids' => $encodedIds]) }}"
+                    class="btn btn-outline-success px-4 py-2">🧩 Tìm cặp</a>
+                <a href="{{ route('game.study', ['ids' => $encodedIds]) }}"
+                    class="btn btn-outline-primary px-4 py-2">📚 Học tập</a>
+                <a href="{{ route('game.check', ['ids' => $encodedIds]) }}"
+                    class="btn btn-outline-danger px-4 py-2">📝 Kiểm tra</a>
+            </div>
+
+            {{-- Khu vực Flashcard --}}
+            <div class="flashcard-area d-flex flex-column align-items-center mb-4">
                 <div class="card shadow-sm w-100 flip-card" style="max-width: 600px;">
+                    {{-- Mặt trước --}}
                     <div class="card-body front-card-body">
                         <div class="d-flex justify-content-between mb-4">
                             <div></div>
@@ -57,6 +72,8 @@
                             <button class="btn btn-link text-secondary"><i class="fas fa-sync-alt"></i></button>
                         </div>
                     </div>
+
+                    {{-- Mặt sau --}}
                     <div class="card-body back-card-body" style="display: none;">
                         <div class="d-flex justify-content-between mb-4">
                             <div></div>
@@ -76,20 +93,18 @@
                     </div>
                 </div>
 
-                <div class="card shadow-sm w-100 mt-2" style="max-width: 600px;">
+                {{-- Thanh điều hướng và đánh giá --}}
+                <div class="card shadow-sm w-100 mt-3" style="max-width: 600px;">
                     <div class="card-body d-flex flex-column align-items-center">
                         <div class="d-flex justify-content-around w-100 mb-3">
                             <div class="d-flex align-items-center text-success">
-                                <i class="far fa-smile me-1"></i>
-                                <span>Dễ</span>
+                                <i class="far fa-smile me-1"></i> <span>Dễ</span>
                             </div>
                             <div class="d-flex align-items-center text-warning">
-                                <i class="far fa-meh me-1"></i>
-                                <span>Trung bình</span>
+                                <i class="far fa-meh me-1"></i> <span>Trung bình</span>
                             </div>
                             <div class="d-flex align-items-center text-danger">
-                                <i class="far fa-frown me-1"></i>
-                                <span>Khó</span>
+                                <i class="far fa-frown me-1"></i> <span>Khó</span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center">
@@ -98,13 +113,13 @@
                             <button class="btn btn-primary next-question ms-3">&gt;</button>
                         </div>
                     </div>
+
                     @if (collect($cards)->contains(fn($card) => Auth::user()->id == $card->user_id))
                         <div class="d-flex justify-content-end mb-3 me-3">
                             <button class="btn btn-warning me-2 edit-question" data-bs-toggle="modal"
                                 data-bs-target="#editQuestionModal">
                                 <i class="fas fa-edit"></i> Sửa
                             </button>
-
                             <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
                                 <i class="fas fa-trash-alt"></i> Xóa
                             </button>
@@ -112,8 +127,28 @@
                     @endif
                 </div>
             </div>
+
+            <hr>
+
+            {{-- Danh sách định nghĩa dạng bảng --}}
+            <div class="definition-list mt-4 w-100 mx-auto" style="max-width: 700px;">
+                <table class="table table-bordered table-striped bg-white">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">Câu hỏi</th>
+                            <th scope="col">Định nghĩa / Đáp án</th>
+                            <th scope="col" class="text-center"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="definition-table-body">
+                        {{-- Dữ liệu sẽ được JS render vào đây --}}
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </div>
+
 
     {{-- Modal chỉnh sửa --}}
     <div class="modal fade" id="editQuestionModal" tabindex="-1" aria-labelledby="editQuestionModalLabel"
@@ -302,6 +337,26 @@
                 let image = (question.images && question.images.length > 0) ? question.images[0].path :
                     null; // Đường dẫn ảnh
                 let card = document.querySelector(".card"); // Thẻ chứa nội dung
+                let listQuestion = "";
+
+                questions.forEach((cardData) => {
+                    let question = cardData.question;
+                    let answer = (question.answers && question.answers.length > 0) ? question.answers[0]
+                        .content : "Chưa có đáp án";
+
+                    listQuestion += `
+                        <tr>
+                            <td class="fw-bold">${question.content}</td>
+                            <td>${answer}</td>
+                            <td class="text-center">
+                                <i class="fas fa-volume-up text-primary" role="button"></i>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                // Đổ dữ liệu vào phần thân bảng
+                document.querySelector(".definition-table-body").innerHTML = listQuestion;
 
                 document.querySelector(".topic_title").innerText = 'Chủ đề: ' + topic.title;
 

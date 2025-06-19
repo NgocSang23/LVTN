@@ -117,28 +117,20 @@ export default {
     width: 250px;
 }
 
-/* Hover effect cho các nav-link */
-/* Nền đậm hơn màu secondary (#6c757d), dùng #5a6268 */
-/* Text giữ trắng */
 .nav-link:hover {
     background-color: #5a6268;
     color: white !important;
 }
 
-/* active-class cho router-link được thêm bg-primary & text trắng */
-/* Nếu bạn muốn active cũng giống hover thì thêm tương tự */
-/* Hoặc đổi active thành màu khác, ví dụ: #495057 (dark) */
 .router-link-active {
     background-color: #495057 !important;
     color: white !important;
 }
 
-/* icon màu trắng */
 .nav-link i {
     color: white;
 }
 
-/* sidebar-heading */
 .sidebar-heading {
     font-weight: 600;
     font-size: 0.85rem;
@@ -149,7 +141,6 @@ export default {
     color: white;
 }
 
-/* border màu sáng cho hr */
 .sidebar-divider {
     border-top: 1px solid rgba(255, 255, 255, 0.3);
 }

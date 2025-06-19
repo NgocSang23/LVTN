@@ -13,11 +13,18 @@ class Card extends Model
         'user_id',
     ];
 
-    public function User() {
+    public function User()
+    {
         return $this->belongsTo(User::class);
     }
 
-    public function Question() {
+    public function Question()
+    {
         return $this->hasOne(Question::class, 'card_id');
+    }
+
+    public function scopeIsRandomOrder($query)
+    {
+        return $query->inRandomOrder(); // hoặc bất kỳ logic random nào bạn muốn
     }
 }

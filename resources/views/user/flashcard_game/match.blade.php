@@ -7,9 +7,7 @@
         .game-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            /* 3 cột */
             gap: 10px;
-            /* Khoảng cách giữa các thẻ */
             margin-top: 20px;
         }
 
@@ -30,27 +28,14 @@
             color: #495057;
         }
 
-        .question-btn:hover {
-            background-color: #007bff;
-            color: white;
-            border-color: #0056b3;
+        .question-btn:hover,
+        .answer-btn:hover {
+            border-color: #000;
         }
 
         .answer-btn {
-            background-color: #e7ffe7;
-            color: #495057;
-        }
-
-        .answer-btn:hover {
-            background-color: #28a745;
-            color: white;
-            border-color: #218838;
-        }
-
-        .matched {
-            background-color: #28a745 !important;
-            color: white !important;
-            border-color: #218838 !important;
+            background-color: #f0f8ff;
+            color: orange;
         }
 
         .hidden {
@@ -95,15 +80,91 @@
         .pagination .pagination-summary {
             display: none;
         }
+
+        .dropdown-menu-match {
+            background-color: #0d1117;
+            color: white;
+            min-width: 220px;
+        }
+
+        .dropdown-item-match {
+            color: white;
+            padding: 10px 15px;
+            transition: 0.2s;
+        }
+
+        .dropdown-item-match:hover {
+            background-color: #161b22;
+            color: white;
+        }
+
+        .dropdown-item-match i {
+            font-size: 1rem;
+        }
+
+        .dropdown-toggle-match {
+            background-color: #0d1117;
+            color: white;
+            border: none;
+        }
+
+        .dropdown-toggle-match:hover {
+            background-color: #161b22;
+        }
+
+        .dropdown-divider-match {
+            border-top: 1px solid #30363d;
+        }
+
+        .match-btn {
+            transition: all 0.2s ease-in-out;
+        }
     </style>
 
     <div class="container text-center mt-4 d-flex flex-column" style="min-height: 90vh;">
         {{-- Thanh điều hướng và tiêu đề --}}
         <div class="d-flex align-items-center mb-3">
-            <a href="{{ route('user.dashboard') }}" class="btn btn-outline-primary d-flex align-items-center me-3">
-                <span class="me-2">🔙</span> Trở lại
-            </a>
-            <button class="btn btn-primary d-flex align-items-center" onclick="window.location.reload();">
+            <div class="dropdown">
+                <button class="btn btn-dark dropdown-toggle-match d-flex align-items-center rounded-3" type="button"
+                    id="flashcardMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-clone text-primary"></i>
+                    <span class="mx-2">Chọn chế độ học</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-match shadow-lg rounded-3 border-0 mt-2"
+                    aria-labelledby="flashcardMenu">
+                    @php
+                        $encodedIds = base64_encode(implode(',', $idsArray));
+                    @endphp
+                    <li>
+                        <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
+                            href="{{ route('game.match', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-sync-alt text-primary"></i> Tìm cặp
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
+                            href="{{ route('game.study', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-file-alt text-primary"></i> Học tập
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
+                            href="{{ route('game.check', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-layer-group text-primary"></i> Kiểm tra
+                        </a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider-match">
+                    </li>
+                    <li>
+                        <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
+                            href="{{ route('user.dashboard') }}">
+                            <i class="fas fa-home text-primary"></i> Trang chủ
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <button class="btn btn-primary d-flex align-items-center mx-2" onclick="window.location.reload();">
                 Tải lại trò chơi
             </button>
         </div>
@@ -172,71 +233,5 @@
     </div>
 
     {{-- Script JavaScript xử lý logic trò chơi --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let selected = []; // Danh sách các nút đang được chọn
-            let matchedPairs = 0; // Số cặp đã ghép đúng
-            const totalPairs = document.querySelectorAll('.match-btn').length / 2;
-
-            // Gắn sự kiện click cho tất cả các nút flashcard
-            document.querySelectorAll('.match-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Nếu nút đã chọn hoặc đã trùng khớp, bỏ qua
-                    if (this.classList.contains('matched') || this.classList.contains('selected'))
-                        return;
-
-                    // Đánh dấu nút là đang chọn
-                    this.classList.add('selected');
-                    selected.push(this);
-
-                    // Khi đã chọn đủ 2 nút
-                    if (selected.length === 2) {
-                        const [first, second] = selected;
-
-                        const word1 = first.dataset.word;
-                        const word2 = second.dataset.word;
-
-                        // Nếu hai nút có cùng word (EN-VI là cặp)
-                        if (word1 === word2) {
-                            setTimeout(() => {
-                                // Đánh dấu là đã ghép đúng và ẩn đi
-                                first.classList.add('matched');
-                                second.classList.add('matched');
-                                first.classList.remove('selected');
-                                second.classList.remove('selected');
-                                first.classList.add('hidden');
-                                second.classList.add('hidden');
-                                selected = [];
-
-                                matchedPairs++;
-
-                                // Nếu đã ghép đủ tất cả các cặp
-                                if (matchedPairs === totalPairs) {
-                                    setTimeout(() => {
-                                        // Hiện modal chúc mừng
-                                        var myModal = new bootstrap.Modal(
-                                            document.getElementById(
-                                                'gameCompleteModal'));
-                                        myModal.show();
-
-                                        // Tự động tải lại sau 2 giây
-                                        setTimeout(() => {
-                                            window.location.reload();
-                                        }, 2000);
-                                    }, 2000);
-                                }
-                            }, 300);
-                        } else {
-                            // Nếu không đúng, hủy chọn sau 0.7s
-                            setTimeout(() => {
-                                first.classList.remove('selected');
-                                second.classList.remove('selected');
-                                selected = [];
-                            }, 700);
-                        }
-                    }
-                });
-            });
-        });
-    </script>
+    <script src="{{ asset('js/game_match.js') }}"></script>
 @endsection
