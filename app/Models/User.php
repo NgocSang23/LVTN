@@ -61,4 +61,12 @@ class User extends Authenticatable
     public function Histories() {
         return $this->hasMany(History::class);
     }
+
+    public function DifficultCards() {
+        return $this->hasMany(DifficultCard::class);
+    }
+
+    public function FlashcardSets() {
+        return $this->hasMany(FlashcardSet::class);
+    }
 }

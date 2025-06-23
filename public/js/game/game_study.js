@@ -1,4 +1,3 @@
-
 document.addEventListener("DOMContentLoaded", function () {
     // selectedGoal: Lưu trữ mục tiêu học tập mà người dùng ĐANG CHỌN trên giao diện (ví dụ: 'exam_prep', 'memorize_all').
     let selectedGoal = null;
@@ -390,24 +389,33 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (isCorrect) {
                     instructionText.textContent = "Tuyệt vời! Bạn đã ghi nhớ.";
                     nextButton.style.display = "block";
+
+                    selectedButton.classList.add("correct");
+
+                    allButtons.forEach((btn) => {
+                        btn.disabled = true;
+                    });
+
                     document.addEventListener("keydown", keydownHandler);
                 } else {
                     instructionText.textContent =
                         "Cần ghi nhớ kỹ hơn. Hãy chọn lại cho đến khi đúng.";
-                    answered = false; // Đặt lại 'answered' về false để cho phép người dùng chọn lại.
-                    if (selectedButton) selectedButton.disabled = true; // Chỉ vô hiệu hóa nút mà người dùng vừa chọn sai.
+                    answered = false;
+
+                    selectedButton.classList.add("incorrect");
+                    selectedButton.disabled = true;
+
                     allButtons.forEach((btn) => {
-                        // Kích hoạt lại các nút đáp án khác (không phải đáp án đúng và không phải nút vừa chọn sai).
                         if (
-                            parseInt(btn.dataset.answerId) !==
-                                correctAnswerId &&
+                            !btn.classList.contains("incorrect") &&
                             btn !== selectedButton
                         ) {
-                            btn.disabled = false; // Bật lại nút.
-                            btn.classList.remove("incorrect"); // Xóa highlight sai nếu có.
+                            btn.disabled = false;
+                            btn.classList.remove("correct"); // Ngăn highlight đúng
                         }
                     });
-                    nextButton.style.display = "none"; // Ẩn nút "Tiếp tục" vì phải chọn đúng mới được qua.
+
+                    nextButton.style.display = "none";
                 }
                 break;
 

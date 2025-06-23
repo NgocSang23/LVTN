@@ -36,4 +36,8 @@ class Question extends Model
     public function Topic() {
         return $this->belongsTo(Topic::class);
     }
+
+    public function DifficultCards() {
+        return $this->hasMany(DifficultCard::class);
+    }
 }

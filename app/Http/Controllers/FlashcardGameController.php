@@ -7,6 +7,7 @@ use App\Models\Card;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 
 class FlashcardGameController extends Controller
@@ -135,94 +136,99 @@ class FlashcardGameController extends Controller
         ]);
     }
 
-    public function check(Request $request)
+    public function check($ids, Request $request)
     {
-        // Giải mã chuỗi ID được mã hóa base64 gửi từ client (chuỗi ID các flashcard)
-        $decodedIds = base64_decode($request->input('ids'));
-
-        // Nếu không giải mã được (có thể do lỗi hoặc chuỗi rỗng), quay lại dashboard với thông báo lỗi
+        $decodedIds = base64_decode($ids);
         if (!$decodedIds) {
             return redirect()->route('user.dashboard')->with('message', 'Liên kết không hợp lệ.');
         }
 
-        // Chuyển chuỗi ID thành mảng (danh sách các ID flashcard)
         $idsArray = explode(',', $decodedIds);
 
-        // Lấy các loại câu hỏi được người dùng chọn từ modal (mặc định là 'mcq' - trắc nghiệm)
-        $selectedTypes = $request->input('selected_types', ['mcq']);
-
-        // Số lượng câu hỏi muốn lấy (giới hạn), mặc định là 20 nếu người dùng không chọn
-        $questionLimit = (int)$request->input('question_limit', 20);
-
-        // Lấy các flashcard theo ID, cùng với thông tin câu hỏi, chủ đề và đáp án liên quan
-        $cards = Card::whereIn('id', $idsArray)
-            ->with(['question.topic', 'question.answers']) // eager load để tránh truy vấn lặp
-            ->whereHas('question', function ($q) use ($selectedTypes) {
-                // Chỉ lấy những flashcard có câu hỏi thuộc loại người dùng đã chọn (MCQ, Essay, True/False)
-                $q->whereIn('type', $selectedTypes);
-            })
-            ->inRandomOrder() // Sắp xếp ngẫu nhiên
-            ->limit($questionLimit) // Giới hạn số lượng câu hỏi theo yêu cầu
-            ->get();
-
-        // Mảng chứa dữ liệu từng câu hỏi sẽ được truyền sang view
-        $quizData = [];
-
-        // Duyệt qua từng flashcard để xây dựng dữ liệu kiểm tra
-        foreach ($cards as $card) {
-            $question = $card->question; // Lấy câu hỏi từ flashcard
-
-            // Bỏ qua nếu không có câu hỏi hoặc không có đáp án nào
-            if (!$question || $question->answers->isEmpty()) {
-                continue;
-            }
-
-            // Đáp án đúng là đáp án đầu tiên (quy ước trong hệ thống)
-            $correctAnswer = $question->answers->first();
-
-            $answersToShow = null; // Mảng chứa các đáp án sẽ hiển thị cho người dùng
-
-            // Nếu là câu trắc nghiệm thì tạo danh sách gồm 1 đáp án đúng + 3 sai (ngẫu nhiên)
-            if ($question->type === 'mcq') {
-                // Lấy 3 đáp án sai từ các câu hỏi khác nhưng cùng chủ đề
-                $wrongAnswers = Answer::whereHas('question', function ($q) use ($question) {
-                    $q->where('topic_id', $question->topic_id) // cùng chủ đề
-                        ->where('id', '!=', $question->id);       // khác câu hiện tại
-                })
-                    ->inRandomOrder()
-                    ->limit(3)
-                    ->get();
-
-                // Nếu không đủ 3 đáp án sai → bỏ qua câu này
-                if ($wrongAnswers->count() < 3) continue;
-
-                // Gộp đáp án đúng + sai, rồi trộn ngẫu nhiên
-                $answersToShow = collect([$correctAnswer])
-                    ->merge($wrongAnswers)
-                    ->shuffle();
-            } else {
-                // Nếu là dạng khác (đúng/sai hoặc tự luận), chỉ cần hiển thị danh sách đáp án gốc
-                $answersToShow = collect($question->answers);
-            }
-
-            // Đưa vào mảng dữ liệu để truyền sang view
-            $quizData[] = [
-                'question' => $question->content, // nội dung câu hỏi
-                'type' => $question->type,        // loại câu hỏi (mcq, true_false, essay)
-                'correct_answer_id' => $correctAnswer->id, // ID của đáp án đúng (dùng để kiểm tra)
-                'answers' => $answersToShow->map(function ($answer) {
-                    return [
-                        'id' => $answer->id,
-                        'content' => $answer->content, // nội dung của từng đáp án
-                    ];
-                })->values() // loại bỏ key không cần thiết
-            ];
+        $selectedTypes = $request->input('selectedTypes');
+        if (is_null($selectedTypes)) {
+            $selectedTypes = ['mcq', 'true_false', 'essay'];
+        } elseif (is_string($selectedTypes)) {
+            $selectedTypes = explode(',', $selectedTypes);
         }
 
-        // Trả về view hiển thị bài kiểm tra, truyền dữ liệu câu hỏi + danh sách ID
+        $questionLimit = (int) $request->input('limit', 10);
+
+        $cards = Card::whereIn('id', $idsArray)
+            ->with(['question.topic', 'question.answers'])
+            ->inRandomOrder()
+            ->get();
+
+        $quizData = collect();
+
+        foreach ($cards as $card) {
+            $question = $card->question;
+            $answers = $question?->answers;
+
+            if (!$question || !$answers || $answers->isEmpty()) continue;
+
+            $type = 'essay';
+            if ($answers->count() >= 3) {
+                $type = 'mcq';
+            } elseif ($answers->count() === 1) {
+                $type = 'true_false';
+            }
+
+            if (!in_array($type, $selectedTypes)) continue;
+
+            if ($type === 'mcq') {
+                $correctAnswer = $answers->first();
+                $wrongAnswers = Answer::whereHas('question', function ($q) use ($question) {
+                    $q->where('topic_id', $question->topic_id)
+                        ->where('id', '!=', $question->id);
+                })->inRandomOrder()->limit(3)->get();
+
+                if ($wrongAnswers->count() < 3) continue;
+
+                $answersToShow = collect([$correctAnswer])->merge($wrongAnswers)->shuffle();
+
+                $quizData->push([
+                    'question' => $question->content,
+                    'type' => 'mcq',
+                    'correct_answer_id' => $correctAnswer->id,
+                    'answers' => $answersToShow->map(fn($ans) => [
+                        'id' => $ans->id,
+                        'content' => $ans->content
+                    ])->values()
+                ]);
+            } elseif ($type === 'true_false') {
+                $realAnswer = $answers->first();
+                $randomWrong = Answer::where('id', '!=', $realAnswer->id)->inRandomOrder()->first();
+
+                if (!$randomWrong) continue;
+
+                $mixed = collect([$realAnswer, $randomWrong])->shuffle();
+
+                $quizData->push([
+                    'question' => $question->content,
+                    'type' => 'true_false',
+                    'correct_answer_id' => $realAnswer->id,
+                    'answers' => $mixed->map(fn($ans) => [
+                        'id' => $ans->id,
+                        'content' => $ans->content
+                    ])->values()
+                ]);
+            } elseif ($type === 'essay') {
+                $quizData->push([
+                    'question' => $question->content,
+                    'type' => 'essay',
+                    'correct_answer_id' => $answers->first()->id,
+                    'answers' => []
+                ]);
+            }
+        }
+
+        $finalQuiz = $quizData->shuffle()->take($questionLimit)->values();
+
         return view('user.flashcard_game.check', [
-            'quizData' => $quizData,
-            'idsArray' => $idsArray
+            'quizData' => $finalQuiz,
+            'idsArray' => $idsArray,
+            'questionCount' => $finalQuiz->count()
         ]);
     }
 

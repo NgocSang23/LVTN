@@ -233,5 +233,5 @@
     </div>
 
     {{-- Script JavaScript xử lý logic trò chơi --}}
-    <script src="{{ asset('js/game_match.js') }}"></script>
+    <script src="{{ asset('js/game/game_match.js') }}"></script>
 @endsection

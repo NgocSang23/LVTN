@@ -18,7 +18,6 @@ class AnswerUser extends Model
     public function User() {
         return $this->belongsTo(User::class);
     }
-
     public function Question() {
         return $this->belongsTo(Question::class, 'question_id');
     }

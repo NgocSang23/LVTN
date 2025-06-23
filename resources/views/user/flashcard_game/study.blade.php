@@ -339,5 +339,5 @@
         window.quizData = @json($quizData);
     </script>
 
-    <script src="{{ asset('js/game_study.js') }}"></script>
+    <script src="{{ asset('js/game/game_study.js') }}"></script>
 @endsection
