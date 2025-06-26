@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <base href="/">
     <title>@yield('title')</title>
     <link rel="icon" href="assets/img/icon.jpg" type="image/x-icon" />
@@ -35,6 +36,8 @@
             border-color: none;
         }
     </style>
+
+    @yield('meta')
 </head>
 
 <body id="page-top">
@@ -62,6 +65,7 @@
     <script src="{{ asset('assets/js/sb-admin-2.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
     @yield('js')
 </body>

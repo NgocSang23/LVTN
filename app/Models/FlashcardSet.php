@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class FlashcardSet extends Model
 {
@@ -33,5 +34,14 @@ class FlashcardSet extends Model
     public function questionCount()
     {
         return count(explode(',', $this->question_ids));
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($set) {
+            if (empty($set->slug)) {
+                $set->slug = Str::slug($set->title . '-' . uniqid());
+            }
+        });
     }
 }

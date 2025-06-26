@@ -27,4 +27,10 @@ class Card extends Model
     {
         return $query->inRandomOrder(); // hoặc bất kỳ logic random nào bạn muốn
     }
+
+    public function flashcardSet()
+    {
+        return $this->hasOne(FlashcardSet::class, 'question_ids')
+            ->whereRaw('FIND_IN_SET(?, question_ids)', [$this->id]);
+    }
 }

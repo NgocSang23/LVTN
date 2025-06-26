@@ -14,47 +14,120 @@
             transform: perspective(1000px) rotateX(5deg) rotateY(5deg) scale(1.02);
             box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
         }
+
+        .dropdown-menu {
+            z-index: 99999 !important;
+        }
+
+        /* Dropdown luôn nổi trên */
+        .show-on-top {
+            z-index: 999999 !important;
+            position: absolute !important;
+        }
     </style>
 
+    {{-- Success Message --}}
     @if (Session::has('success'))
-        <div class="alert alert-success fixed-top text-center p-3 shadow-lg js-div-dissappear"
-            style="width: 100%; max-width: 400px; margin: 10px auto; z-index: 1050;">
-            <i class="fas fa-check-circle me-2"></i> {{ Session::get('success') }}
+        <div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow js-div-dissappear d-flex align-items-center text-start"
+            style="max-width: 420px; min-width: 300px; z-index: 1050;">
+            <i class="fas fa-check-circle me-2 fs-5 text-success"></i>
+            <div class="flex-grow-1">
+                {{ Session::get('success') }}
+            </div>
+            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" aria-label="Đóng"></button>
         </div>
     @endif
+
+    {{-- Error Message --}}
+    @if (Session::has('error'))
+        <div class="alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3 shadow js-div-dissappear d-flex align-items-center text-start"
+            style="max-width: 420px; min-width: 300px; z-index: 1050;">
+            <i class="fas fa-exclamation-circle me-2 fs-5 text-danger"></i>
+            <div class="flex-grow-1">
+                {{ Session::get('error') }}
+            </div>
+            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" aria-label="Đóng"></button>
+        </div>
+    @endif
+
     <div class="container">
         <!-- Các khái niệm và định nghĩa -->
         <div class="mb-4">
             <h2 class="h4 mb-4">📘 Khái niệm / định nghĩa</h2>
-            <div class="row g-4">
+            <div class="row g-4 position-relative" style="z-index: 1;">
                 @forelse ($card_defines as $card_define)
-                    <div class="col-12 col-sm-6 col-lg-4 position-relative">
-                        <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d">
-                            <div class="dropdown position-absolute top-0 end-0 p-3" style="z-index: 9999;"> <span
-                                    data-bs-toggle="dropdown" role="button"
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d position-relative"
+                            style="overflow: visible; z-index: 10;">
+
+                            <!-- Dropdown menu -->
+                            <div class="dropdown position-absolute top-0 end-0 p-3" style="z-index: 99999;">
+                                <span data-bs-toggle="dropdown" role="button"
                                     style="cursor: pointer; font-size: 20px; line-height: 1;">
                                     ⋮
                                 </span>
+                                <ul class="dropdown-menu dropdown-menu-end show-on-top">
+                                    {{-- Chia sẻ --}}
+                                    <li class="dropdown-header text-muted">Chia sẻ</li>
 
-                                <ul class="dropdown-menu dropdown-menu-start">
+                                    {{-- Sao chép liên kết --}}
                                     <li>
-                                        <a class="dropdown-item"
-                                            href="{{ route('define.edit', ['id' => $card_define['first_card']->id]) }}">✏️
-                                            Chỉnh sửa</a>
+                                        <a class="dropdown-item" href="#"
+                                            onclick="copyToClipboard('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                            📋 Sao chép liên kết
+                                        </a>
                                     </li>
+
+                                    {{-- Mã QR --}}
                                     <li>
-                                        <form id="deleteForm" method="POST" action="#">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="button" class="dropdown-item text-danger"
-                                                onclick="confirmDelete('{{ route('define.destroy', ['id' => $card_define['first_card']->id]) }}')">
-                                                🗑️ Xoá toàn bộ thẻ
-                                            </button>
-                                        </form>
+                                        <a class="dropdown-item" href="#"
+                                            onclick="showQrModal('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                            🌐 Tạo mã QR
+                                        </a>
                                     </li>
+
+                                    {{-- Facebook --}}
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            onclick="shareFacebook('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                            📤 Chia sẻ Facebook
+                                        </a>
+                                    </li>
+
+                                    {{-- Zalo --}}
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                            onclick="shareZalo('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                            💬 Chia sẻ Zalo
+                                        </a>
+                                    </li>
+
+                                    @if (empty($card_define['first_card']->flashcardSet?->slug))
+                                        {{-- Nếu chưa có FlashcardSet, hiển thị nút tạo --}}
+                                        <li>
+                                            <form method="POST" action="{{ route('flashcard.share.create') }}">
+                                                @csrf
+                                                @foreach (explode(',', $card_define['card_ids']) as $id)
+                                                    <input type="hidden" name="card_ids[]" value="{{ $id }}">
+                                                @endforeach
+                                                <button type="submit" class="dropdown-item text-primary">
+                                                    🌍 Chia sẻ công khai
+                                                </button>
+                                            </form>
+                                        </li>
+                                    @else
+                                        {{-- Nếu đã có, hiển thị nút xem --}}
+                                        <li>
+                                            <a class="dropdown-item text-success"
+                                                href="{{ route('flashcard.share', ['slug' => $card_define['first_card']->flashcardSet->slug]) }}">
+                                                🔗 Xem chia sẻ công khai
+                                            </a>
+                                        </li>
+                                    @endif
                                 </ul>
                             </div>
 
+                            <!-- Nội dung thẻ -->
                             <a href="{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}"
                                 class="text-decoration-none text-dark">
                                 <div class="d-flex align-items-center">
@@ -156,28 +229,23 @@
         </div>
     </div>
 
-    {{-- Modal xóa --}}
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content" style="border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: none;">
-                <div class="modal-header"
-                    style="background: linear-gradient(135deg, #ff5f6d, #ffc371); color: white; border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                    <h5 class="modal-title" style="font-weight: 600;">⚠️ Xác nhận xóa</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
-                </div>
-                <div class="modal-body" style="font-size: 1rem; color: #333;">
-                    <p>Bạn có chắc chắn muốn xóa câu hỏi này không?</p>
-                </div>
-                <div class="modal-footer d-flex justify-content-between">
-                    <form id="deleteForm" method="POST" action="">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger">Xóa</button>
-                    </form>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
-                        style="padding: 6px 20px; border-radius: 6px;">Hủy</button>
-                </div>
+    {{-- Modal sao chép liên kết --}}
+    <div class="modal fade" id="copySuccessModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4">
+                <h5 class="mb-2 text-success"><i class="fas fa-check-circle"></i> Đã sao chép liên kết</h5>
+                <p class="text-muted mb-0">Liên kết đã được sao chép vào clipboard.</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal mã QR --}}
+    <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4">
+                <h5 class="mb-3">🌐 Mã QR chia sẻ</h5>
+                <div id="qrcode-container" class="d-flex justify-content-center"></div>
+                <button class="btn btn-secondary mt-3" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>
@@ -238,21 +306,61 @@
             var myModal = new bootstrap.Modal(document.getElementById('confirmTestModal'));
             myModal.show();
         }
-    </script>
 
-    <script>
-        function confirmDelete(url) {
-            // Cập nhật action của form trong modal
-            const form = document.getElementById('deleteForm');
-            form.action = url;
+        // ✅ Hàm sao chép liên kết vào clipboard và hiển thị modal thông báo
+        function copyToClipboard(link) {
+            // Sử dụng Clipboard API để ghi văn bản vào clipboard
+            navigator.clipboard.writeText(link).then(() => {
+                // Sau khi sao chép thành công, hiển thị modal thông báo "Đã sao chép"
+                const copyModal = new bootstrap.Modal(document.getElementById('copySuccessModal'));
+                copyModal.show();
 
-            // Hiện modal xác nhận xóa
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-            deleteModal.show();
+                // Tự động ẩn modal sau 2.5 giây
+                setTimeout(() => copyModal.hide(), 2500);
+            }).catch(err => {
+                // Nếu có lỗi trong quá trình sao chép, ghi log ra console
+                console.error("❌ Không thể sao chép liên kết: ", err);
+            });
+        }
+
+        // 🌐 Hiển thị mã QR trong modal với đường link cần chia sẻ
+        function showQrModal(link) {
+            // Lấy thẻ chứa QR code trong modal
+            const qrContainer = document.getElementById("qrcode-container");
+
+            // Xoá mã QR cũ nếu đã có (để tránh chồng lặp)
+            qrContainer.innerHTML = "";
+
+            // Tạo mã QR mới với liên kết truyền vào
+            new QRCode(qrContainer, {
+                text: link, // Đường link sẽ được mã hoá thành mã QR
+                width: 200, // Chiều rộng mã QR
+                height: 200 // Chiều cao mã QR
+            });
+
+            // Hiển thị modal chứa mã QR
+            const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
+            qrModal.show();
+        }
+
+        // 📤 Chia sẻ Facebook: mở cửa sổ popup để chia sẻ đường link
+        function shareFacebook(link) {
+            // Tạo URL chia sẻ của Facebook, thêm tham số đường link
+            const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+
+            // Mở popup chia sẻ với kích thước cố định
+            window.open(url, '_blank', 'width=600,height=500');
+        }
+
+        // 💬 Chia sẻ Zalo: mở cửa sổ chia sẻ Zalo qua liên kết zalo.me
+        function shareZalo(link) {
+            // Zalo không hỗ trợ JavaScript chia sẻ trực tiếp, nên chỉ chuyển hướng sang trang zalo.me/share
+            const zaloUrl = `https://zalo.me/share?url=${encodeURIComponent(link)}`;
+
+            // Mở cửa sổ mới để người dùng chia sẻ đường link
+            window.open(zaloUrl, '_blank');
         }
     </script>
-
-
 
     {{-- Tìm kiếm --}}
     {{-- <script>

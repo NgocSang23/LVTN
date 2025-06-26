@@ -26,6 +26,14 @@
             box-shadow: none;
             border-color: none;
         }
+
+        .mark-difficult {
+            transition: all 0.3s ease-in-out;
+        }
+
+        .mark-difficult:hover {
+            transform: scale(1.05);
+        }
     </style>
 
     <div class="bg-light d-flex align-items-center justify-content-center">
@@ -43,15 +51,15 @@
                     $encodedIds = base64_encode(implode(',', $cards->pluck('id')->toArray()));
                 @endphp
 
-                <a href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}"
-                    class="btn btn-outline-warning px-4 py-2">🃏 Flashcard</a>
+                <a href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}" class="btn btn-outline-warning px-4 py-2">🃏
+                    Flashcard</a>
                 {{-- <a href="{{ route('game.essay', ['ids' => $encodedIds]) }}" class="btn btn-outline-dark px-4 py-2">✏️ Tự luận</a> --}}
-                <a href="{{ route('game.match', ['ids' => $encodedIds]) }}"
-                    class="btn btn-outline-success px-4 py-2">🧩 Tìm cặp</a>
-                <a href="{{ route('game.study', ['ids' => $encodedIds]) }}"
-                    class="btn btn-outline-primary px-4 py-2">📚 Học tập</a>
-                <a href="{{ route('game.check', ['ids' => $encodedIds]) }}"
-                    class="btn btn-outline-danger px-4 py-2">📝 Kiểm tra</a>
+                <a href="{{ route('game.match', ['ids' => $encodedIds]) }}" class="btn btn-outline-success px-4 py-2">🧩 Tìm
+                    cặp</a>
+                <a href="{{ route('game.study', ['ids' => $encodedIds]) }}" class="btn btn-outline-primary px-4 py-2">📚 Học
+                    tập</a>
+                <a href="{{ route('game.check', ['ids' => $encodedIds]) }}" class="btn btn-outline-danger px-4 py-2">📝 Kiểm
+                    tra</a>
             </div>
 
             {{-- Khu vực Flashcard --}}
@@ -103,9 +111,13 @@
                             <div class="d-flex align-items-center text-warning">
                                 <i class="far fa-meh me-1"></i> <span>Trung bình</span>
                             </div>
-                            <div class="d-flex align-items-center text-danger">
+                            <div class="d-flex align-items-center text-danger mark-difficult" style="cursor: pointer">
                                 <i class="far fa-frown me-1"></i> <span>Khó</span>
                             </div>
+                        </div>
+                        <!-- ✅ THÊM PHẦN NÀY -->
+                        <div class="d-flex justify-content-center mt-2">
+                            <div class="resolve-container"></div>
                         </div>
                         <div class="d-flex align-items-center">
                             <button class="btn btn-primary prev-question me-3">&lt;</button>
@@ -245,6 +257,7 @@
     <script>
         // Chờ đến khi DOM tải xong mới chạy code bên trong
         document.addEventListener("DOMContentLoaded", function() {
+
             let currentIndex = 0; // Biến lưu chỉ số câu hỏi hiện tại
             let questions = []; // Mảng chứa danh sách các câu hỏi từ API
 
@@ -364,6 +377,156 @@
                     document.querySelector(".question_content").innerHTML =
                         `<div style="max-height: 150px; overflow-y: auto;">${question.content}</div>`;
                     document.querySelector(".answer_content").innerHTML = answer;
+
+                    const markBtn = document.querySelector(".mark-difficult"); // Nút "Khó"
+                    const resolveContainer = document.querySelector(
+                    ".resolve-container"); // Nơi hiện nút "Tôi đã hiểu"
+
+                    // Gán ID câu hỏi vào nút
+                    markBtn.dataset.questionId = question.id;
+
+                    // Reset giao diện mặc định
+                    markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`;
+                    markBtn.classList.remove("btn-success", "fw-bold", "text-success");
+                    markBtn.classList.add("text-danger");
+                    markBtn.style.pointerEvents = "auto";
+                    resolveContainer.innerHTML = "";
+
+                    // Gọi API kiểm tra trạng thái
+                    fetch(`/user/api/flashcard/check-difficult/${question.id}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.is_difficult) {
+                                if (!data.is_resolved) {
+                                    // 🔸 Đã đánh dấu "Khó" nhưng chưa "Tôi đã hiểu"
+                                    markBtn.innerHTML =
+                                        `<i class="fas fa-check-circle me-1"></i> <span>Đã đánh dấu</span>`;
+                                    markBtn.style.pointerEvents = "none";
+
+                                    // Hiện nút "Tôi đã hiểu"
+                                    resolveContainer.innerHTML = `
+                                        <button class="btn btn-warning mark-resolved mt-2 mb-2" data-question-id="${question.id}" style="min-width: 140px;">
+                                            <i class="fas fa-check"></i> Tôi đã hiểu
+                                        </button>
+                                    `;
+
+                                    // Bắt sự kiện click vào "Tôi đã hiểu"
+                                    document.querySelector(".mark-resolved").addEventListener("click",
+                                    function() {
+                                        const qid = this.dataset.questionId;
+
+                                        fetch("/user/flashcard/resolved", {
+                                                method: "POST",
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "X-CSRF-TOKEN": document.querySelector(
+                                                        'meta[name="csrf-token"]').content
+                                                },
+                                                body: JSON.stringify({
+                                                    question_id: qid
+                                                })
+                                            })
+                                            .then(res => res.json())
+                                            .then(result => {
+                                                if (result.status === "resolved") {
+                                                    markBtn.innerHTML =
+                                                        `<i class="far fa-frown me-1"></i> Khó`;
+                                                    markBtn.classList.remove("text-success");
+                                                    markBtn.classList.add("text-danger");
+                                                    markBtn.style.pointerEvents = "auto";
+                                                    resolveContainer.innerHTML = "";
+                                                }
+                                            });
+                                    });
+
+                                } else {
+                                    // 🔸 Đã đánh dấu + đã "Tôi đã hiểu"
+                                    markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`;
+                                    markBtn.classList.remove("text-success");
+                                    markBtn.classList.add("text-danger");
+                                    markBtn.style.pointerEvents = "auto";
+
+                                    // Cho phép đánh dấu lại
+                                    markBtn.addEventListener("click", function() {
+                                        const qid = this.dataset.questionId;
+
+                                        fetch("/user/flashcard/mark-difficult", {
+                                                method: "POST",
+                                                headers: {
+                                                    "Content-Type": "application/json",
+                                                    "X-CSRF-TOKEN": document.querySelector(
+                                                        'meta[name="csrf-token"]').content
+                                                },
+                                                body: JSON.stringify({
+                                                    question_id: qid
+                                                })
+                                            })
+                                            .then(res => res.json())
+                                            .then(result => {
+                                                if (result.status === "marked") {
+                                                    markBtn.innerHTML =
+                                                        `<i class="fas fa-check-circle me-1"></i> Đã đánh dấu`;
+                                                    markBtn.style.pointerEvents = "none";
+
+                                                    // Hiện nút "Tôi đã hiểu"
+                                                    resolveContainer.innerHTML = `
+                                                        <button class="btn btn-warning mark-resolved mt-2 mb-2" data-question-id="${qid}" style="min-width: 140px;">
+                                                            <i class="fas fa-check"></i> Tôi đã hiểu
+                                                        </button>
+                                                    `;
+
+                                                    document.querySelector(".mark-resolved")
+                                                        .addEventListener("click", function() {
+                                                            fetch("/user/flashcard/resolved", {
+                                                                    method: "POST",
+                                                                    headers: {
+                                                                        "Content-Type": "application/json",
+                                                                        "X-CSRF-TOKEN": document
+                                                                            .querySelector(
+                                                                                'meta[name="csrf-token"]'
+                                                                                ).content
+                                                                    },
+                                                                    body: JSON.stringify({
+                                                                        question_id: qid
+                                                                    })
+                                                                })
+                                                                .then(res => res.json())
+                                                                .then(result => {
+                                                                    if (result.status ===
+                                                                        "resolved") {
+                                                                        markBtn.innerHTML =
+                                                                            `<i class="far fa-frown me-1"></i> Khó`;
+                                                                        markBtn.classList
+                                                                            .remove(
+                                                                                "text-success"
+                                                                                );
+                                                                        markBtn.classList
+                                                                            .add(
+                                                                                "text-danger"
+                                                                                );
+                                                                        markBtn.style
+                                                                            .pointerEvents =
+                                                                            "auto";
+                                                                        resolveContainer
+                                                                            .innerHTML = "";
+                                                                    }
+                                                                });
+                                                        });
+                                                }
+                                            });
+                                    }, {
+                                        once: true
+                                    });
+                                }
+                            } else {
+                                // ❌ Chưa từng đánh dấu
+                                markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`;
+                                markBtn.classList.remove("text-success");
+                                markBtn.classList.add("text-danger");
+                                markBtn.style.pointerEvents = "auto";
+                                resolveContainer.innerHTML = "";
+                            }
+                        });
                 } else if (type === "essay") {
                     // Render form cho câu hỏi essay
                     card.innerHTML = `
@@ -556,8 +719,15 @@
                     `{{ route('flashcard_define_essay.destroy', ':id') }}`.replace(':id', cardData.id);
 
                 // Load dữ liệu vào form sửa
-                document.getElementById("editQuestionContent").value = question.content;
-                document.getElementById("editAnswerContent").value = answer;
+                const editQuestionInput = document.getElementById("editQuestionContent");
+                if (editQuestionInput) {
+                    editQuestionInput.value = question.content;
+                }
+
+                const editAnswerInput = document.getElementById("editAnswerContent");
+                if (editAnswerInput) {
+                    editAnswerInput.value = answer;
+                }
             }
 
             // Nút lùi câu hỏi
@@ -581,6 +751,74 @@
             document.querySelector(".current-question").addEventListener("click", function() {
                 currentIndex = 0;
                 updateQuestion();
+            });
+
+            // Bắt sự kiện khi click vào phần khó
+            document.querySelectorAll(".mark-difficult").forEach(el => {
+                el.addEventListener("click", function() {
+                    const questionId = this.dataset.questionId; // Lấy ID câu hỏi
+
+                    fetch("{{ route('flashcard.mark_difficult') }}", {
+                            method: "POST",
+                            headers: {
+                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                question_id: questionId
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            // ✅ Cập nhật nút "Khó"
+                            this.innerHTML =
+                                '<i class="fas fa-check-circle me-1"></i> Đã đánh dấu';
+                            this.classList.remove("text-danger");
+                            this.classList.add("text-success");
+                            this.style.pointerEvents = "none";
+
+                            // ✅ Hiện lại nút "Tôi đã hiểu"
+                            const resolveContainer = document.querySelector(
+                                ".resolve-container");
+                            resolveContainer.innerHTML = `
+                                <button class="btn btn-warning mark-resolved mt-2 mb-2" data-question-id="${questionId}" style="min-width: 140px;">
+                                    <i class="fas fa-check"></i> Tôi đã hiểu
+                                </button>
+                            `;
+
+                            // Gắn sự kiện cho nút "Tôi đã hiểu"
+                            document.querySelector(".mark-resolved").addEventListener("click",
+                                function() {
+                                    fetch("{{ route('flashcard.mark_resolved') }}", {
+                                            method: "POST",
+                                            headers: {
+                                                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                                                "Content-Type": "application/json"
+                                            },
+                                            body: JSON.stringify({
+                                                question_id: questionId
+                                            })
+                                        })
+                                        .then(res => res.json())
+                                        .then(result => {
+                                            if (result.status === "resolved") {
+                                                // ✅ Reset lại giao diện "Khó"
+                                                el.innerHTML =
+                                                    '<i class="far fa-frown me-1"></i> Khó';
+                                                el.classList.remove("text-success");
+                                                el.classList.add("text-danger");
+                                                el.style.pointerEvents = "auto";
+
+                                                resolveContainer.innerHTML = '';
+                                            }
+                                        });
+                                });
+                        })
+                        .catch(err => {
+                            alert("Lỗi khi đánh dấu thẻ khó.");
+                            console.error(err);
+                        });
+                });
             });
 
             // Gọi API khi load trang lần đầu

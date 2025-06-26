@@ -226,7 +226,12 @@ class FlashcardDefineEssayController extends Controller
             ->where('questions.topic_id', $topicId) // Lọc theo topic_id
             ->get();
 
-        return view('user.flashcard_define_essay.show', compact('cards'));
+        $question = Question::find($id);
+        if (!$question) {
+            abort(404, 'Câu hỏi không tồn tại.');
+        }
+
+        return view('user.flashcard_define_essay.show', compact('cards', 'question'));
     }
 
     public function edit(string $id)
