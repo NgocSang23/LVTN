@@ -24,10 +24,38 @@
             <i class="fa-solid fa-clock-rotate-left"></i>
             <span>Kết quả học tập</span></a>
     </li>
-    <li class="nav-item active">
-        <a class="nav-link" href="">
+    @can('teacher')
+        <li class="nav-item active">
+            <a class="nav-link" href="{{ route('classrooms.index') }}">
+                <i class="fas fa-chalkboard-teacher"></i> <span>Lớp học của tôi</span>
+            </a>
+        </li>
+    @endcan
+    @can('student')
+        <li class="nav-item active">
+            <a class="nav-link" href="{{ route('classrooms.joinForm') }}">
+                <i class="fa-solid fa-user-plus"></i>
+                <span>Tham gia lớp học</span>
+            </a>
+        </li>
+        <li class="nav-item active">
+            <a class="nav-link" href="{{ route('classrooms.my') }}">
+                <i class="fas fa-users"></i>
+                <span>Lớp học của tôi</span>
+            </a>
+        </li>
+    @endcan
+    <li class="nav-item {{ request()->is('user/notifications*') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('user.notifications') }}">
             <i class="fa-solid fa-bell"></i>
-            <span>Thông báo</span></a>
+            <span>Thông báo</span>
+            @php
+                $unread = auth()->user()?->customNotifications()->where('is_read', false)->count();
+            @endphp
+            @if ($unread)
+                <span class="badge bg-danger ms-1">{{ $unread }}</span>
+            @endif
+        </a>
     </li>
 
     <hr class="sidebar-divider">

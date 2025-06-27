@@ -6,6 +6,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Thiagoprz\CompositeKey\HasCompositeKey;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 
+ *
+ * @property int $question_number
+ * @property int $test_id
+ * @property int $topic_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Test $Test
+ * @property-read \App\Models\Topic $Topic
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber query()
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber whereQuestionNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber whereTestId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber whereTopicId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|QuestionNumber whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
 class QuestionNumber extends Model
 {
     use HasFactory, HasCompositeKey;

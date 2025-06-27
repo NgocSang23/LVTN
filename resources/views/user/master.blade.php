@@ -70,4 +70,20 @@
     @yield('js')
 </body>
 
+@if (session('success'))
+    <div class="alert alert-success alert-dismissible fade show fixed-top text-center p-3 shadow-lg js-div-dissappear"
+        style="z-index: 1050; max-width: 450px; margin: 1rem auto;" role="alert">
+        <i class="fa-solid fa-check-circle me-1"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if (session('error'))
+    <div class="alert alert-danger alert-dismissible fade show fixed-top text-center p-3 shadow-lg js-div-dissappear"
+        style="z-index: 1050; max-width: 450px; margin: 1rem auto;" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
 </html>

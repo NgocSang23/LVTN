@@ -27,7 +27,9 @@
             <h1 class="h3 fw-bold text-primary">Tạo khái niệm hoặc định nghĩa mới</h1>
             <p class="text-muted">Điền thông tin bên dưới để thêm thẻ ghi nhớ</p>
         </div>
-        <form method="post" id="flashcard-form" action="{{ route('flashcard_define_essay.store') }}" enctype="multipart/form-data" style="background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+        <form method="post" id="flashcard-form" action="{{ route('flashcard_define_essay.store') }}"
+            enctype="multipart/form-data"
+            style="background: #ffffff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
             @csrf
             <div class="row mb-4">
                 <div class="col-md-6 mb-3 mb-md-0">
@@ -42,7 +44,8 @@
                     @enderror
                 </div>
                 <div class="col-md-6">
-                    <input type="text" name="topic_title" placeholder="Nhập chủ đề, ví dụ: Sinh học - Chương 22" class="form-control" style="border-radius: 8px;">
+                    <input type="text" name="topic_title" placeholder="Nhập chủ đề, ví dụ: Sinh học - Chương 22"
+                        class="form-control" style="border-radius: 8px;">
                     @error('topic_title')
                         <small class="text-danger">{{ $message }}</small>
                     @enderror
@@ -51,7 +54,8 @@
 
             <div class="mb-4 d-flex justify-content-center gap-4">
                 <label class="d-flex align-items-center gap-2">
-                    <input type="radio" name="question_type" value="definition" checked> <span>Khái niệm / Định nghĩa</span>
+                    <input type="radio" name="question_type" value="definition" checked> <span>Khái niệm / Định
+                        nghĩa</span>
                 </label>
                 <label class="d-flex align-items-center gap-2">
                     <input type="radio" name="question_type" value="essay"> <span>Tự luận</span>
@@ -65,17 +69,20 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="fw-bold card-number">Câu 1</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-card" style="border-radius: 50px; padding: 6px 12px;">Xóa</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-card"
+                                style="border-radius: 50px; padding: 6px 12px;">Xóa</button>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <input type="text" name="question_content[]" placeholder="Thuật ngữ" class="form-control" style="border-radius: 8px;">
+                                <input type="text" name="question_content[]" placeholder="Thuật ngữ" class="form-control"
+                                    style="border-radius: 8px;">
                                 @error('question_content.0')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
-                                <input type="text" name="answer_content[]" placeholder="Định nghĩa" class="form-control" style="border-radius: 8px;">
+                                <input type="text" name="answer_content[]" placeholder="Định nghĩa" class="form-control"
+                                    style="border-radius: 8px;">
                                 @error('answer_content.0')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
@@ -83,14 +90,16 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <input type="file" name="image_name[]" class="form-control image-input" accept="image/*" style="border-radius: 8px;">
+                                <input type="file" name="image_name[]" class="form-control image-input" accept="image/*"
+                                    style="border-radius: 8px;">
                                 @error('image_name.0')
                                     <small class="text-danger">{{ $message }}</small>
                                 @enderror
                             </div>
                             <div class="col-md-6">
                                 <div class="preview-container text-center d-none">
-                                    <img src="" width="80" alt="Xem trước ảnh" class="image-preview d-none" style="border-radius: 8px; border: 1px solid #ddd;">
+                                    <img src="" width="80" alt="Xem trước ảnh" class="image-preview d-none"
+                                        style="border-radius: 8px; border: 1px solid #ddd;">
                                 </div>
                             </div>
                         </div>
@@ -98,9 +107,23 @@
                 </div>
             </div>
 
+            @can('teacher')
+                <div class="mb-4">
+                    <label for="classroom_id" class="form-label">Chia sẻ ngay vào lớp học (tuỳ chọn):</label>
+                    {{-- <select class="form-select" name="classroom_id" id="classroom_id" style="border-radius: 8px;">
+                        <option value="">-- Không chia sẻ --</option>
+                        @foreach ($myClassrooms as $classroom)
+                            <option value="{{ $classroom->id }}">{{ $classroom->name }}</option>
+                        @endforeach
+                    </select> --}}
+                </div>
+            @endcan
+
             <div class="d-flex justify-content-end align-items-center mt-4">
-                <button type="button" id="add-card" class="btn btn-outline-primary me-2" style="border-radius: 8px; padding: 8px 20px;">+ THÊM THẺ</button>
-                <input type="submit" class="btn btn-primary text-white" value="Tạo và ôn luyện" style="border-radius: 8px; padding: 8px 20px;">
+                <button type="button" id="add-card" class="btn btn-outline-primary me-2"
+                    style="border-radius: 8px; padding: 8px 20px;">+ THÊM THẺ</button>
+                <input type="submit" class="btn btn-primary text-white" value="Tạo và ôn luyện"
+                    style="border-radius: 8px; padding: 8px 20px;">
             </div>
         </form>
     </div>

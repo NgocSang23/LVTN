@@ -5,6 +5,26 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * 
+ *
+ * @property int $id
+ * @property int $user_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\Question|null $Question
+ * @property-read \App\Models\User $User
+ * @property-read \App\Models\FlashcardSet|null $flashcardSet
+ * @method static \Illuminate\Database\Eloquent\Builder|Card isRandomOrder()
+ * @method static \Illuminate\Database\Eloquent\Builder|Card newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Card newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Card query()
+ * @method static \Illuminate\Database\Eloquent\Builder|Card whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Card whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Card whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Card whereUserId($value)
+ * @mixin \Eloquent
+ */
 class Card extends Model
 {
     use HasFactory;

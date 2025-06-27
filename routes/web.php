@@ -2,6 +2,7 @@
 
 use App\AI\Ochat;
 use App\Http\Controllers\AiSuggestionController;
+use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\DifficultCardController;
 use App\Http\Controllers\FlashcardDefineEssayController;
 use App\Http\Controllers\FlashcardGameController;
@@ -15,7 +16,7 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// GUEST ROUTES
+// ========== GUEST ROUTES ==========
 Route::middleware('guest')->group(function () {
     Route::get('/login', [UserController::class, 'login'])->name('user.login');
     Route::post('/login', [UserController::class, 'post_login'])->name('user.post_login');
@@ -27,16 +28,40 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 });
 
-// AUTH ROUTES
+// ========== PUBLIC ROUTES ==========
+Route::get('/flashcard/share/{slug}', [FlashcardSetController::class, 'publicView'])->name('flashcard.share');
+
+Route::get('/', [UserController::class, 'dashboard'])->name('user.dashboard'); // Có thể chuyển vào auth nếu cần
+
+Route::prefix('define')->name('define.')->group(function () {
+    Route::get('/{id}/edit', [FlashcardDefineEssayController::class, 'editAll'])->name('edit');
+    Route::delete('/{id}', [FlashcardDefineEssayController::class, 'destroyAll'])->name('destroy');
+});
+
+Route::get('/admin/{any?}', function () {
+    return view('admin.welcome');
+})->where('any', '.*');
+
+// ========== AUTH ROUTES ==========
 Route::middleware('auth')->prefix('user')->group(function () {
+    // User account
     Route::get('/logout', [UserController::class, 'logout'])->name('user.logout');
     Route::get('/profile', [UserController::class, 'profile'])->name('user.profile');
     Route::put('/profile', [UserController::class, 'update_profile'])->name('user.update_profile');
 
+    // Search
     Route::get('/search', [SearchController::class, 'show'])->name('user.search');
 
     // Flashcard Define Essay
+    Route::resource('flashcard_define_essay', FlashcardDefineEssayController::class)->except(['show']);
     Route::get('/flashcard_define_essay/{ids}', [FlashcardDefineEssayController::class, 'show'])->name('user.flashcard_define_essay');
+
+    // Flashcard Multiple Choice
+    Route::resource('flashcard_multiple_choice', FlashcardMultipleChoiceController::class);
+
+    // Flashcard Set
+    Route::post('/flashcard/share/create', [FlashcardSetController::class, 'createFromCards'])->name('flashcard.share.create');
+    Route::post('/flashcard_set/store', [FlashcardSetController::class, 'store'])->name('flashcard_set.store');
 
     // Flashcard Games
     Route::prefix('flashcard_define_essay')->group(function () {
@@ -49,15 +74,6 @@ Route::middleware('auth')->prefix('user')->group(function () {
     // Save user answers
     Route::post('/flashcard/answer/save', [FlashcardDefineEssayController::class, 'storeUserAnswerDefine'])->name('flashcard_define_essay.save');
     Route::post('/ai/check-answer', [FlashcardDefineEssayController::class, 'storeUserAnswer'])->name('user.answer_user');
-
-    // Flashcard Resource Routes
-    Route::resource('flashcard_define_essay', FlashcardDefineEssayController::class)->except(['show']);
-    Route::resource('flashcard_multiple_choice', FlashcardMultipleChoiceController::class);
-
-    // Flashcard Set (new)
-    Route::post('/flashcard/share/create', [FlashcardSetController::class, 'createFromCards'])->name('flashcard.share.create');
-    Route::post('/flashcard_set/store', [FlashcardSetController::class, 'store'])->name('flashcard_set.store');
-    Route::get('/flashcard/share/{slug}', [FlashcardSetController::class, 'publicView'])->name('flashcard.share');
 
     // Library
     Route::prefix('library')->group(function () {
@@ -86,23 +102,27 @@ Route::middleware('auth')->prefix('user')->group(function () {
         ]);
     });
 
+    // Classrooms (SỬA THỨ TỰ ĐỂ TRÁNH CONFLICT)
+    Route::get('/classrooms', [ClassroomController::class, 'index'])->name('classrooms.index'); // cho giáo viên
+    Route::get('/classrooms/create', [ClassroomController::class, 'create'])->name('classrooms.create');
+    Route::get('/classrooms/join', [ClassroomController::class, 'joinForm'])->name('classrooms.joinForm'); // 👈 Đưa lên trước
+    Route::post('/classrooms/join', [ClassroomController::class, 'joinByCode'])->name('classrooms.join');
+    Route::get('/classrooms/invite/{code}', [ClassroomController::class, 'inviteLink'])->name('classrooms.inviteLink');
+    Route::get('/my-classrooms', [ClassroomController::class, 'myClassrooms'])->name('classrooms.my');
+
+    Route::post('/classrooms', [ClassroomController::class, 'store'])->name('classrooms.store');
+    Route::delete('/classrooms/{id}/leave', [ClassroomController::class, 'leave'])->name('classrooms.leave');
+    Route::delete('/classrooms/{classroom}/remove-student/{user}', [ClassroomController::class, 'removeStudent'])->name('classrooms.removeStudent');
+
+    // ⚠️ Route động phải ĐỂ CUỐI CÙNG
+    Route::get('/classrooms/{id}', [ClassroomController::class, 'show'])->name('classrooms.show');
+
+    // Notifications
+    Route::get('/notifications', [UserController::class, 'notifications'])->name('user.notifications');
+
     // AI Suggestion
     Route::post('/ai/suggest-topic', [AiSuggestionController::class, 'suggest']);
 });
-
-// DASHBOARD
-Route::get('/', [UserController::class, 'dashboard'])->name('user.dashboard');
-
-// DEFINE EDITING
-Route::prefix('define')->name('define.')->group(function () {
-    Route::get('/{id}/edit', [FlashcardDefineEssayController::class, 'editAll'])->name('edit');
-    Route::delete('/{id}', [FlashcardDefineEssayController::class, 'destroyAll'])->name('destroy');
-});
-
-// ADMIN SPA
-Route::get('/admin/{any?}', function () {
-    return view('admin.welcome');
-})->where('any', '.*');
 
 // Route::get('/chatbot', function () {
 //     return view('chat_bot');

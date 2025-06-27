@@ -23,7 +23,8 @@
         @csrf
         <div class="input-group">
             <input name="search" type="text" class="form-control bg-light border-0 small"
-                placeholder="Học phần, sách giáo khoa, câu hỏi" aria-label="Search" aria-describedby="basic-addon2" value="{{ request('search') }}">
+                placeholder="Học phần, sách giáo khoa, câu hỏi" aria-label="Search" aria-describedby="basic-addon2"
+                value="{{ request('search') }}">
 
             <div class="input-group-append">
                 <button class="btn btn-primary" type="submit">
@@ -33,7 +34,8 @@
         </div>
 
         <!-- Kết quả tìm kiếm AJAX -->
-        <div id="search-suggestions" class="position-absolute bg-white shadow p-2 rounded w-100" style="z-index: 9999; display: none;"></div>
+        <div id="search-suggestions" class="position-absolute bg-white shadow p-2 rounded w-100"
+            style="z-index: 9999; display: none;"></div>
     </form>
 
     <!-- Topbar Navbar -->
@@ -52,10 +54,59 @@
                     href="{{ auth()->check() ? route('flashcard_define_essay.create') : route('user.login') }}"
                     data-value="concept">Tạo thẻ mới
                 </a>
+                @can('teacher')
+                    <a class="dropdown-item" href="{{ route('classrooms.create') }}">Tạo lớp học</a>
+                @endcan
                 <a class="dropdown-item select-option"
                     href="{{ auth()->check() ? route('flashcard_multiple_choice.create') : route('user.login') }}"
                     data-value="multiple_choice">Câu hỏi trắc
                     nghiệm
+                </a>
+            </div>
+        </li>
+
+        <li class="nav-item dropdown no-arrow mx-1">
+            @php
+                $notifications = \App\Models\Notification::where('user_id', auth()->id())
+                    ->orderBy('created_at', 'desc')
+                    ->take(5)
+                    ->get();
+                $unread = $notifications->where('is_read', false)->count();
+            @endphp
+            <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
+                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-bell fa-fw"></i>
+                @if ($unread > 0)
+                    <span class="badge badge-danger badge-counter">{{ $unread }}</span>
+                @endif
+            </a>
+
+            <!-- Dropdown - Thông báo -->
+            <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="alertsDropdown"
+                style="min-width: 300px;">
+                <h6 class="dropdown-header">🔔 Thông báo</h6>
+
+                @forelse ($notifications as $note)
+                    <a class="dropdown-item d-flex align-items-start small text-wrap" href="#">
+                        <div class="me-2">
+                            <div class="icon-circle bg-primary text-white">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="small text-gray-500">{{ $note->created_at->format('d/m/Y H:i') }}</div>
+                            <span class="{{ $note->is_read ? '' : 'fw-bold' }}">
+                                {!! \Illuminate\Support\Str::limit($note->title, 50) !!}
+                            </span>
+                        </div>
+                    </a>
+                @empty
+                    <span class="dropdown-item text-muted">Không có thông báo nào</span>
+                @endforelse
+
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item text-center small text-gray-500" href="{{ route('user.notifications') }}">
+                    Xem tất cả thông báo
                 </a>
             </div>
         </li>

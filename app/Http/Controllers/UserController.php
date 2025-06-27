@@ -163,4 +163,14 @@ class UserController extends Controller
 
         return redirect()->back()->with('success', 'Cập nhật thông tin thành công!');
     }
+
+    public function notifications()
+    {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $notifications = $user->customNotifications()->latest()->paginate(10);
+        $user->customNotifications()->update(['is_read' => true]);
+
+        return view('user.notifications.index', compact('notifications'));
+    }
 }
