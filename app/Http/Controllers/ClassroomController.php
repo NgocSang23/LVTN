@@ -61,7 +61,7 @@ class ClassroomController extends Controller
 
     public function show($id)
     {
-        $classroom = ClassRoom::with('members')->findOrFail($id);
+        $classroom = ClassRoom::with(['users', 'members', 'sharedFlashcards.flashcardSet', 'tests'])->findOrFail($id);
 
         // Nếu là học viên (không phải giáo viên)
         if (auth()->user()->roles !== 'teacher') {
@@ -75,12 +75,11 @@ class ClassroomController extends Controller
         return view('user.classrooms.show', compact('classroom'));
     }
 
-
     public function leave($id)
     {
         $classroom = ClassRoom::findOrFail($id);
         $classroom->users()->detach(auth()->id());
-        return redirect()->route('user.classrooms.my')->with('success', 'Bạn đã rời lớp học thành công!');
+        return redirect()->route('classrooms.my')->with('success', 'Bạn đã rời lớp học thành công!');
     }
 
     public function removeStudent($classroomId, $userId)
@@ -150,6 +149,18 @@ class ClassroomController extends Controller
             'classroom_id' => $classroom->id,
             'user_id' => auth()->id(),
         ]);
+
+        // Gửi thông báo cho giáo viên khi học sinh tham gia
+        $user = auth()->user();
+        $teacher = $classroom->creator ?? $classroom->user; // tuỳ bạn đặt tên quan hệ
+
+        if ($teacher && $teacher->id !== $user->id) {
+            $teacher->customNotifications()->create([
+                'title' => '📥 Học viên mới',
+                'message' => $user->name . ' đã tham gia lớp "' . $classroom->name . '"',
+                'url' => route('classrooms.show', $classroom->id),
+            ]);
+        }
 
         return redirect()->route('classrooms.my')->with('success', 'Tham gia lớp học thành công!');
     }

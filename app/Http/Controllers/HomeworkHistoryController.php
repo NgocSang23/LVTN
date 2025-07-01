@@ -114,4 +114,25 @@ class HomeworkHistoryController extends Controller
             ->get();
         return view('user.homework_history.multiple', compact('multiple_data'));
     }
+
+    public function detailMultipleChoice($test_id)
+    {
+        $userId = Auth::id();
+
+        $test = DB::table('tests')->where('id', $test_id)->first();
+        $history = DB::table('histories')
+            ->where('user_id', $userId)
+            ->where('test_id', $test_id)
+            ->first();
+
+        $questions = DB::table('multiple_questions as q')
+            ->join('test_results as r', 'q.id', '=', 'r.multiple_question_id')
+            ->join('options as o', 'r.option_id', '=', 'o.id')
+            ->where('q.test_id', $test_id)
+            ->select('q.id as question_id', 'q.content as question', 'o.content as option', 'r.answer', 'o.id as option_id')
+            ->get()
+            ->groupBy('question_id');
+
+        return view('user.homework_history.multiple_detail', compact('test', 'history', 'questions'));
+    }
 }

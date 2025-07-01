@@ -1,6 +1,7 @@
 <?php
 
 use App\AI\Ochat;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AiSuggestionController;
 use App\Http\Controllers\ClassroomController;
 use App\Http\Controllers\DifficultCardController;
@@ -30,8 +31,9 @@ Route::middleware('guest')->group(function () {
 
 // ========== PUBLIC ROUTES ==========
 Route::get('/flashcard/share/{slug}', [FlashcardSetController::class, 'publicView'])->name('flashcard.share');
+Route::get('/flashcards/share/base64/{encodedIds}', [FlashcardSetController::class, 'share'])->name('flashcards.share_view');
 
-Route::get('/', [UserController::class, 'dashboard'])->name('user.dashboard'); // Có thể chuyển vào auth nếu cần
+Route::get('/', [UserController::class, 'dashboard'])->name('user.dashboard');
 
 Route::prefix('define')->name('define.')->group(function () {
     Route::get('/{id}/edit', [FlashcardDefineEssayController::class, 'editAll'])->name('edit');
@@ -58,6 +60,12 @@ Route::middleware('auth')->prefix('user')->group(function () {
 
     // Flashcard Multiple Choice
     Route::resource('flashcard_multiple_choice', FlashcardMultipleChoiceController::class);
+
+    // Route load partial HTML block tạo thêm câu hỏi quiz
+    Route::get('/quiz/question-partial', function () {
+        $index = request()->get('index', 0);
+        return view('partials.quiz_create_question_block', compact('index'));
+    })->name('quiz.question_partial');
 
     // Flashcard Set
     Route::post('/flashcard/share/create', [FlashcardSetController::class, 'createFromCards'])->name('flashcard.share.create');
@@ -86,6 +94,8 @@ Route::middleware('auth')->prefix('user')->group(function () {
         Route::get('/define_essay', [HomeworkHistoryController::class, 'defineEssay'])->name('user.history_define_essay');
         Route::get('/multiple_choice', [HomeworkHistoryController::class, 'multipleChoice'])->name('user.history_multiple_choice');
         Route::post('/save', [HomeworkHistoryController::class, 'saveHistory'])->name('user.history_save');
+        Route::get('/multiple/{test_id}', [HomeworkHistoryController::class, 'detailMultipleChoice'])
+            ->name('user.history_multiple_choice_detail');
     });
 
     // Difficult Flashcards
@@ -102,10 +112,10 @@ Route::middleware('auth')->prefix('user')->group(function () {
         ]);
     });
 
-    // Classrooms (SỬA THỨ TỰ ĐỂ TRÁNH CONFLICT)
-    Route::get('/classrooms', [ClassroomController::class, 'index'])->name('classrooms.index'); // cho giáo viên
+    // Classrooms
+    Route::get('/classrooms', [ClassroomController::class, 'index'])->name('classrooms.index');
     Route::get('/classrooms/create', [ClassroomController::class, 'create'])->name('classrooms.create');
-    Route::get('/classrooms/join', [ClassroomController::class, 'joinForm'])->name('classrooms.joinForm'); // 👈 Đưa lên trước
+    Route::get('/classrooms/join', [ClassroomController::class, 'joinForm'])->name('classrooms.joinForm');
     Route::post('/classrooms/join', [ClassroomController::class, 'joinByCode'])->name('classrooms.join');
     Route::get('/classrooms/invite/{code}', [ClassroomController::class, 'inviteLink'])->name('classrooms.inviteLink');
     Route::get('/my-classrooms', [ClassroomController::class, 'myClassrooms'])->name('classrooms.my');
@@ -113,12 +123,26 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::post('/classrooms', [ClassroomController::class, 'store'])->name('classrooms.store');
     Route::delete('/classrooms/{id}/leave', [ClassroomController::class, 'leave'])->name('classrooms.leave');
     Route::delete('/classrooms/{classroom}/remove-student/{user}', [ClassroomController::class, 'removeStudent'])->name('classrooms.removeStudent');
-
-    // ⚠️ Route động phải ĐỂ CUỐI CÙNG
     Route::get('/classrooms/{id}', [ClassroomController::class, 'show'])->name('classrooms.show');
 
     // Notifications
     Route::get('/notifications', [UserController::class, 'notifications'])->name('user.notifications');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.delete');
+    Route::delete('/notifications', [NotificationController::class, 'deleteAll'])->name('notifications.deleteAll');
+    Route::post('/notifications/mark-read', function () {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $user->customNotifications()->where('is_read', false)->update(['is_read' => 1]);
+        return response()->json(['status' => 'ok']);
+    })->name('notifications.markRead');
+    Route::get('/api/notifications/latest', function () {
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $notifications = $user->customNotifications()->orderByDesc('created_at')->take(5)->get();
+        $unread = $notifications->where('is_read', false)->count();
+        $html = view('partials.notification_dropdown', compact('notifications'))->render();
+        return response()->json(['html' => $html, 'unread' => $unread]);
+    })->name('notifications.ajax');
 
     // AI Suggestion
     Route::post('/ai/suggest-topic', [AiSuggestionController::class, 'suggest']);

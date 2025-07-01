@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClassRoom;
 use App\Models\MultipleQuestion;
+use App\Models\Notification;
 use App\Models\Option;
 use App\Models\QuestionNumber;
 use App\Models\Subject;
@@ -14,23 +16,31 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
 
 class FlashcardMultipleChoiceController extends Controller
 {
     public function index()
     {
         $tests = Test::with(['questionnumbers.topic', 'user'])
-                ->where('user_id', Auth::guard('web')->user()->id)
-                ->latest()
-                ->get()
-                ->take(6);
+            ->where('user_id', Auth::guard('web')->user()->id)
+            ->latest()
+            ->take(6)
+            ->get();
         return view('user.library.multiple', compact('tests'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
         $subjects = Subject::all();
-        return view('user.flashcard_multiple_choice.create', compact('subjects'));
+        // Nếu người dùng là giáo viên thì lấy danh sách lớp học
+        $myClassrooms = [];
+        if (auth()->user()->roles === 'teacher') {
+            $myClassrooms = ClassRoom::where('teacher_id', auth()->id())->get();
+        }
+
+        return view('user.flashcard_multiple_choice.create', compact('subjects', 'myClassrooms'));
     }
 
     public function store(Request $request)
@@ -45,76 +55,89 @@ class FlashcardMultipleChoiceController extends Controller
             'option_content' => 'required|array',
             'option_content.*' => 'required|array',
             'answer' => 'required|array',
-            'answer.*' => 'required|min:0|max:3'
-
-        ], [
-            'test_content.required' => 'Vui lòng nhập nội dung bài kiểm tra',
-            'test_time.required' => 'Vui lòng nhập thời gian kiểm tra',
-            'subject_id.required' => 'Vui lòng chọn môn học',
-            'subject_id.exists' => 'Môn học không tồn tại',
-            'topic_title.required' => 'Vui lòng nhập chủ đề',
-            'multiple_question.required' => 'Vui lòng nhập nội dung câu hỏi',
-            'multiple_question.*.required' => 'Vui lòng nhập nội dung cho tất cả câu hỏi',
-            'option_content.required' => 'Vui lòng nhập các đáp án',
-            'option_content.*.required' => 'Vui lòng nhập tất cả các đáp án',
-            'answer.required' => 'Vui lòng chọn đáp án đúng',
-            'answer.*.required' => 'Vui lòng chọn đáp án đúng cho tất cả câu hỏi'
+            'answer.*' => 'required|min:0|max:3',
+            'classroom_ids' => 'nullable|array', // ✅ Thêm dòng này
+            'classroom_ids.*' => 'exists:class_rooms,id' // ✅ Kiểm tra từng id
         ]);
 
-        // Tạo chủ đề
-        $topic = new Topic();
-        $topic->title = $data['topic_title'];
-        $topic->subject_id = $data['subject_id'];
-        $topic->save();
+        if (!$request->has('multiple_question') && !$request->has('existing_question_ids')) {
+            return back()->withErrors(['error' => 'Vui lòng chọn hoặc tạo ít nhất 1 câu hỏi.']);
+        }
 
-        // Tạo bài kiểm tra
-        $test = new Test();
-        $test->title = "";
-        $test->content = $data['test_content'];
-        $test->time = gmdate("H:i:s", $data['test_time'] * 60);
-        $test->user_id = auth()->user()->id;
-        $test->save();
+        $topic = Topic::firstOrCreate(
+            [
+                'title' => $data['topic_title'],
+                'subject_id' => $data['subject_id']
+            ]
+        );
 
-        // Tạo số câu hỏi
-        $questionNumber = new QuestionNumber();
-        $questionNumber->question_number = count($data['multiple_question']);
-        $questionNumber->test_id = $test->id;
-        $questionNumber->topic_id = $topic->id;
-        $questionNumber->save();
+        $test = Test::create([
+            'title' => '',
+            'content' => $data['test_content'],
+            'time' => gmdate("H:i:s", $data['test_time'] * 60),
+            'user_id' => auth()->id()
+        ]);
+
+        // ✅ Gắn bài kiểm tra vào các lớp học nếu có
+        if (!empty($data['classroom_ids'])) {
+            $test->classrooms()->syncWithoutDetaching($data['classroom_ids']);
+
+            foreach ($data['classroom_ids'] as $classroomId) {
+                $classroom = ClassRoom::with('members')->find($classroomId);
+
+                foreach ($classroom->members as $student) {
+                    if ($student->id !== auth()->id()) {
+                        Notification::create([
+                            'user_id' => $student->id,
+                            'title' => '📝 Bài kiểm tra mới trong lớp ' . $classroom->name,
+                            'message' => 'Giáo viên đã chia sẻ bài kiểm tra "' . Str::limit($test->content, 50) . '". Hãy vào lớp để bắt đầu ôn luyện!',
+                            'link' => route('classrooms.show', $classroomId),
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Câu hỏi có sẵn
+        if ($request->has('existing_question_ids')) {
+            foreach ($request->existing_question_ids as $questionId) {
+                $question = MultipleQuestion::find($questionId);
+                if ($question) {
+                    Test_MultipleQuestion::create([
+                        'test_id' => $test->id,
+                        'multiplequestion_id' => $question->id
+                    ]);
+                }
+            }
+        }
+
+        $questionNumber = QuestionNumber::create([
+            'question_number' => count($data['multiple_question']),
+            'test_id' => $test->id,
+            'topic_id' => $topic->id
+        ]);
 
         foreach ($data['multiple_question'] as $index => $questionContent) {
-            // Tạo câu hỏi
-            $question = new MultipleQuestion();
-            $question->content = $questionContent;
-            $question->topic_id = $topic->id;
-            $question->save();
+            $question = MultipleQuestion::create([
+                'content' => $questionContent,
+                'topic_id' => $topic->id
+            ]);
 
-            $test_multipleQuestion = new Test_MultipleQuestion();
-            $test_multipleQuestion->test_id = $test->id;
-            $test_multipleQuestion->multiplequestion_id = $question->id;
-            $test_multipleQuestion->save();
-
-            // Kiểm tra nếu option_content tồn tại
-            if (!isset($data['option_content'][$index]) || !is_array($data['option_content'][$index])) {
-                Log::error("option_content bị thiếu hoặc không hợp lệ", ['index' => $index, 'data' => $data]);
-                continue;
-            }
+            Test_MultipleQuestion::create([
+                'test_id' => $test->id,
+                'multiplequestion_id' => $question->id
+            ]);
 
             foreach ($data['option_content'][$index] as $key => $optionContent) {
-                // Tạo option
-                $option = new Option();
-                $option->content = $optionContent;
-                $option->save();
+                $option = Option::create(['content' => $optionContent]);
 
-                // Xác định đáp án đúng
-                $isCorrect = (isset($data['answer'][$index]) && in_array($key, (array) $data['answer'][$index])) ? 1 : 0;
+                $isCorrect = in_array($key, (array) $data['answer'][$index]) ? 1 : 0;
 
-                // Lưu vào test_results
-                $testResult = new TestResult();
-                $testResult->answer = $isCorrect;
-                $testResult->option_id = $option->id;
-                $testResult->multiplequestion_id = $question->id;
-                $testResult->save();
+                TestResult::create([
+                    'answer' => $isCorrect,
+                    'option_id' => $option->id,
+                    'multiplequestion_id' => $question->id
+                ]);
             }
         }
 
@@ -123,14 +146,11 @@ class FlashcardMultipleChoiceController extends Controller
 
     public function show(string $id)
     {
-        $test = Test::with(['user'])->findOrFail($id);
+        $test = Test::with('user')->findOrFail($id);
         return view('user.flashcard_multiple_choice.show', compact('test'));
     }
 
-    public function edit(string $id)
-    {
-        //
-    }
+    public function edit(string $id) {}
 
     public function update(Request $request, string $id)
     {
@@ -145,56 +165,34 @@ class FlashcardMultipleChoiceController extends Controller
             'option_content.*' => 'required|array|size:4',
             'answer' => 'required|array',
             'answer.*' => 'required|in:0,1,2,3'
-        ], [
-            'test_content.required' => 'Vui lòng nhập nội dung bài kiểm tra',
-            'test_time.required' => 'Vui lòng nhập thời gian kiểm tra',
-            'multiple_question.required' => 'Vui lòng nhập nội dung câu hỏi',
-            'multiple_question.*.required' => 'Vui lòng nhập nội dung cho tất cả câu hỏi',
-            'option_content.required' => 'Vui lòng nhập các đáp án',
-            'option_content.*.required' => 'Vui lòng nhập đầy đủ 4 đáp án cho mỗi câu hỏi',
-            'answer.required' => 'Vui lòng chọn đáp án đúng',
-            'answer.*.required' => 'Vui lòng chọn 1 đáp án đúng cho mỗi câu hỏi',
-            'answer.*.in' => 'Đáp án phải nằm trong các phương án A, B, C, D'
         ]);
 
-
-        // Tìm bài kiểm tra theo ID
         $test = Test::findOrFail($id);
+        $test->update([
+            'content' => $data['test_content'],
+            'time' => gmdate("H:i:s", $data['test_time'] * 60)
+        ]);
 
-        // Cập nhật nội dung và thời gian cho bài kiểm tra
-        $test->content = $data['test_content'];
-        $test->time = gmdate("H:i:s", $data['test_time'] * 60); // Chuyển phút sang định dạng H:i:s
-        $test->save();
-
-        // Lặp qua từng câu hỏi để cập nhật
         foreach ($data['multiple_question'] as $index => $questionContent) {
-            // Tìm câu hỏi theo ID
             $question = MultipleQuestion::find($data['question_id'][$index]);
 
             if ($question) {
-                $question->content = $questionContent;
-                $question->save();
+                $question->update(['content' => $questionContent]);
 
-                // Lặp qua 4 option của câu hỏi
                 foreach ($data['option_content'][$index] as $optIndex => $optionContent) {
-                    // Tìm option theo ID
                     $option = Option::find($data['option_id'][$index][$optIndex]);
 
                     if ($option) {
-                        $option->content = $optionContent;
-                        $option->save();
+                        $option->update(['content' => $optionContent]);
                     }
 
-                    // Tìm và cập nhật đáp án đúng/sai cho câu hỏi
                     $testResult = TestResult::where('multiplequestion_id', $question->id)
                         ->where('option_id', $option->id)
                         ->first();
 
                     if ($testResult) {
-                        // answer[0] là array chứa vị trí đáp án đúng (ví dụ [2] nghĩa là option thứ 3 đúng)
                         $correct = (int) $data['answer'][$index][0];
-                        $testResult->answer = ($correct === $optIndex) ? 1 : 0;
-                        $testResult->save();
+                        $testResult->update(['answer' => ($correct === $optIndex) ? 1 : 0]);
                     }
                 }
             }
@@ -212,37 +210,21 @@ class FlashcardMultipleChoiceController extends Controller
         }
 
         $optionId = DB::table('test_results')->whereIn('multiplequestion_id', function ($query) use ($test) {
-            $query->select('id')
-                ->from('multiple_questions')
-                ->where('topic_id', $test->id);
+            $query->select('id')->from('multiple_questions')->where('topic_id', $test->id);
         })->pluck('option_id');
 
-        // Xóa câu trả lời trong `test_results` trước
         DB::table('test_results')->whereIn('multiplequestion_id', function ($query) use ($test) {
-            $query->select('id')
-                ->from('multiple_questions')
-                ->where('topic_id', $test->id);
+            $query->select('id')->from('multiple_questions')->where('topic_id', $test->id);
         })->delete();
 
-        // Xóa bảng trung gian `test__multiple_questions` trước khi xóa câu hỏi
         DB::table('test__multiple_questions')->whereIn('multiplequestion_id', function ($query) use ($test) {
-            $query->select('id')
-                ->from('multiple_questions')
-                ->where('topic_id', $test->id);
+            $query->select('id')->from('multiple_questions')->where('topic_id', $test->id);
         })->delete();
 
         DB::table('test__multiple_questions')->where('test_id', $test->id)->delete();
-
-        // Xóa các phương án (options) liên quan
         DB::table('options')->whereIn('id', $optionId)->delete();
-
-        // Xóa câu hỏi trong `multiple_questions`
         DB::table('multiple_questions')->where('topic_id', $test->id)->delete();
-
-        // Xóa quan hệ số câu hỏi
         $test->QuestionNumbers()->delete();
-
-        // Xóa bài kiểm tra
         $test->delete();
 
         return redirect()->route('user.dashboard')->with('success', 'Xóa bài kiểm tra thành công!');

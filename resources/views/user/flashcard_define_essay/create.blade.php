@@ -64,7 +64,19 @@
 
             <hr class="mb-4">
 
+            <!-- Ô nhập số lượng thẻ -->
+            <div class="mb-4 d-flex align-items-center gap-3">
+                <label for="number-of-cards" class="fw-semibold mb-0">Số lượng thẻ muốn tạo:</label>
+                <input type="number" id="number-of-cards" min="1" max="50" value="1" class="form-control"
+                    style="width: 100px; border-radius: 8px;">
+                <button type="button" id="create-multiple-cards" class="btn btn-outline-success"
+                    style="border-radius: 8px;">
+                    Tạo thẻ
+                </button>
+            </div>
+
             <div id="flashcard-content">
+                <!-- Thẻ đầu tiên mặc định -->
                 <div class="card mb-4 flashcard" style="border-radius: 10px; border: 1px solid #e0e0e0;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -107,20 +119,24 @@
                 </div>
             </div>
 
-            @can('teacher')
+            @if (auth()->user()->roles === 'teacher' && count($myClassrooms) > 0)
                 <div class="mb-4">
-                    <label for="classroom_id" class="form-label">Chia sẻ ngay vào lớp học (tuỳ chọn):</label>
-                    {{-- <select class="form-select" name="classroom_id" id="classroom_id" style="border-radius: 8px;">
+                    <label for="classroom_id" class="form-label fw-semibold">Chia sẻ ngay vào lớp học (tuỳ chọn):</label>
+                    <select class="form-select" name="classroom_id" id="classroom_id" style="border-radius: 8px;">
                         <option value="">-- Không chia sẻ --</option>
                         @foreach ($myClassrooms as $classroom)
-                            <option value="{{ $classroom->id }}">{{ $classroom->name }}</option>
+                            <option value="{{ $classroom->id }}">{{ $classroom->name }} ({{ $classroom->code }})</option>
                         @endforeach
-                    </select> --}}
+                    </select>
+                    <div class="form-text">Bạn có thể chia sẻ bài kiểm tra này trực tiếp với một lớp học.</div>
+                    @error('classroom_id')
+                        <small class="text-danger">{{ $message }}</small>
+                    @enderror
                 </div>
-            @endcan
+            @endif
 
-            <div class="d-flex justify-content-end align-items-center mt-4">
-                <button type="button" id="add-card" class="btn btn-outline-primary me-2"
+            <div class="d-flex justify-content-end align-items-center mt-4 gap-2">
+                <button type="button" id="add-card" class="btn btn-outline-primary"
                     style="border-radius: 8px; padding: 8px 20px;">+ THÊM THẺ</button>
                 <input type="submit" class="btn btn-primary text-white" value="Tạo và ôn luyện"
                     style="border-radius: 8px; padding: 8px 20px;">
@@ -128,140 +144,162 @@
         </form>
     </div>
 
-    {{-- <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let form = document.getElementById("flashcard-form");
-            let questionType = document.querySelectorAll("input[name='question_type']");
-
-            function updateForm() {
-                let selectType = document.querySelector('input[name="question_type"]:checked').value;
-                form.action = selectType === "definition"
-                    ? "{{ route('flashcard_define.store') }}"
-                    : "{{ route('flashcard_essay.store') }}";
-            }
-
-            questionType.forEach(radio => {
-                radio.addEventListener("change", updateForm);
-            });
-
-            updateForm();
-        });
-    </script> --}}
+    <!-- Modal thông báo lỗi -->
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="errorModalLabel">Thông báo lỗi</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body" id="errorModalBody">
+                    <!-- Nội dung lỗi sẽ được thay đổi bằng JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            let flashcardContent = document.getElementById("flashcard-content");
-            let addCard = document.getElementById("add-card");
+            // --- Các biến DOM chính ---
+            const flashcardContent = document.getElementById("flashcard-content");
+            const addCardBtn = document.getElementById("add-card");
+            const createMultipleBtn = document.getElementById("create-multiple-cards");
+            const numberOfCardsInput = document.getElementById("number-of-cards");
 
-            // Sự kiện khi click nút "Thêm thẻ"
-            addCard.addEventListener("click", function() {
-                // Đếm số lượng flashcard hiện tại để gán số thứ tự
-                let cardCount = document.querySelectorAll(".flashcard").length + 1;
+            // Bootstrap modal instance cho modal lỗi
+            const errorModalEl = document.getElementById('errorModal');
+            const errorModalBody = document.getElementById('errorModalBody');
+            const bootstrapErrorModal = new bootstrap.Modal(errorModalEl);
 
-                let newCard = document.createElement("div");
-                newCard.classList.add("card", "mb-3", "flashcard");
+            /**
+             * Hàm hiển thị modal lỗi với message truyền vào
+             * @param {string} message - Nội dung lỗi cần hiển thị
+             */
+            function showErrorModal(message) {
+                errorModalBody.textContent = message; // Cập nhật nội dung modal
+                bootstrapErrorModal.show(); // Hiển thị modal
+            }
 
-                newCard.innerHTML = `
-                    <div class="card-body">
-                        <!-- Header của card gồm số thứ tự và nút Xóa -->
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <span class="fw-bold card-number">Câu ${cardCount}</span>
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-card" style="border-radius: 50px;">Xóa</button>
-                        </div>
+            /**
+             * Tạo 1 thẻ flashcard mới với số thứ tự index
+             * @param {number} index - số thứ tự của thẻ flashcard (1-based)
+             * @returns {HTMLElement} - phần tử DOM thẻ flashcard
+             */
+            function createFlashcardCard(index) {
+                const card = document.createElement("div");
+                card.classList.add("card", "mb-4", "flashcard");
+                card.style.borderRadius = "10px";
+                card.style.border = "1px solid #e0e0e0";
 
-                        <!-- Input Thuật ngữ và Định nghĩa -->
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <input type="text" name="question_content[]" placeholder="Thuật ngữ" class="form-control" style="border-radius: 8px;">
-                                @error('question_content.0')
-                                    <small class="text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <input type="text" name="answer_content[]" placeholder="Định nghĩa" class="form-control" style="border-radius: 8px;">
-                                @error('answer_content.0')
-                                    <small class="text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-                        </div>
+                card.innerHTML = `
+              <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                      <span class="fw-bold card-number">Câu ${index}</span>
+                      <button type="button" class="btn btn-sm btn-outline-danger remove-card" style="border-radius: 50px; padding: 6px 12px;">Xóa</button>
+                  </div>
+                  <div class="row">
+                      <div class="col-md-6 mb-3">
+                          <input type="text" name="question_content[]" placeholder="Thuật ngữ" class="form-control" style="border-radius: 8px;">
+                      </div>
+                      <div class="col-md-6 mb-3">
+                          <input type="text" name="answer_content[]" placeholder="Định nghĩa" class="form-control" style="border-radius: 8px;">
+                      </div>
+                  </div>
+                  <div class="row">
+                      <div class="col-md-6 mb-3">
+                          <input type="file" name="image_name[]" class="form-control image-input" accept="image/*" style="border-radius: 8px;">
+                      </div>
+                      <div class="col-md-6">
+                          <div class="preview-container text-center d-none">
+                              <img src="" width="80" alt="Xem trước ảnh" class="image-preview d-none" style="border-radius: 8px; border: 1px solid #ddd;">
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          `;
+                return card;
+            }
 
-                        <!-- Input upload ảnh và vùng preview -->
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <input type="file" name="image_name[]" class="form-control image-input" accept="image/*" style="border-radius: 8px;">
-                                @error('image_name.0')
-                                    <small class="text-danger">{{ $message }}</small>
-                                @enderror
-                            </div>
-                            <div class="col-md-6">
-                                <div class="preview-container text-center d-none"> <!-- container preview ẩn lúc đầu -->
-                                    <img src="" width="80" alt="Xem trước ảnh" class="image-preview d-none" style="border-radius: 8px; border: 1px solid #ddd;">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+            /**
+             * Cập nhật lại số thứ tự cho tất cả thẻ flashcard hiện có trên trang
+             */
+            function updateCardNumbers() {
+                const cards = document.querySelectorAll(".flashcard");
+                cards.forEach((card, idx) => {
+                    const cardNumber = card.querySelector(".card-number");
+                    if (cardNumber) {
+                        cardNumber.textContent = "Câu " + (idx + 1);
+                    }
+                });
+            }
 
-                // Thêm thẻ mới vào phần flashcardContent
-                flashcardContent.appendChild(newCard);
-
-                // Cập nhật lại số thứ tự cho tất cả thẻ flashcard
-                updateCardNumbers();
-            });
-
-            // Xử lý sự kiện click cho nút "Xóa"
+            // Xử lý sự kiện xóa thẻ flashcard khi click nút Xóa
             flashcardContent.addEventListener("click", function(e) {
-                // Nếu click vào nút "remove-card"
                 if (e.target.classList.contains("remove-card")) {
-                    // Tìm thẻ flashcard gần nhất và xóa nó
                     e.target.closest(".flashcard").remove();
                     updateCardNumbers();
                 }
             });
 
-            // Hàm cập nhật số thứ tự cho các flashcard
-            function updateCardNumbers() {
-                let cards = document.querySelectorAll(".flashcard");
-                cards.forEach((card, index) => {
-                    let cardNumber = card.querySelector(".card-number");
-                    cardNumber.textContent = "Câu " + (index + 1); // set lại số thứ tự 1,2,3...
-                });
-            }
-        });
+            // Xử lý thêm 1 thẻ flashcard mới khi click nút + THÊM THẺ
+            addCardBtn.addEventListener("click", function() {
+                const cardCount = document.querySelectorAll(".flashcard").length + 1;
+                const newCard = createFlashcardCard(cardCount);
+                flashcardContent.appendChild(newCard);
+            });
 
-        // Đợi DOM load xong, sau đó xử lý preview ảnh khi chọn file
-        document.addEventListener('DOMContentLoaded', function() {
+            // Xử lý tạo nhiều thẻ flashcard theo số lượng nhập vào
+            createMultipleBtn.addEventListener("click", function() {
+                let count = parseInt(numberOfCardsInput.value);
 
-            // Bắt sự kiện "change" khi chọn file ảnh
+                // Kiểm tra đầu vào: phải là số, >= 1, <= 50
+                if (isNaN(count) || count < 1) {
+                    showErrorModal("Vui lòng nhập số lượng thẻ hợp lệ (tối thiểu 1).");
+                    return;
+                }
+                if (count > 50) {
+                    showErrorModal("Số lượng thẻ tối đa là 50.");
+                    return;
+                }
+
+                // Xóa hết các thẻ flashcard hiện có
+                flashcardContent.innerHTML = "";
+
+                // Tạo thẻ mới theo số lượng đã nhập
+                for (let i = 1; i <= count; i++) {
+                    let newCard = createFlashcardCard(i);
+                    flashcardContent.appendChild(newCard);
+                }
+            });
+
+            // Xử lý preview ảnh khi chọn file input có class image-input
             document.addEventListener("change", function(event) {
-                // Kiểm tra nếu phần tử change là input file có class "image-input"
                 if (event.target.classList.contains("image-input")) {
-                    let file = event.target.files[0];
+                    const file = event.target.files[0];
                     if (file) {
-                        let reader = new FileReader();
+                        const reader = new FileReader();
                         reader.onload = function(e) {
-                            // Tìm khối .row cha chứa input và preview
-                            let parentCard = event.target.closest(".row");
+                            // Tìm thẻ cha chứa input file và vùng preview
+                            const parentCard = event.target.closest(".row");
                             if (parentCard) {
-                                // Hiện container chứa ảnh nếu đang ẩn
-                                let imgDiv = parentCard.querySelector(".preview-container");
-                                if (imgDiv) {
-                                    imgDiv.classList.remove("d-none");
-                                }
-                                // Tìm ảnh preview và hiển thị hình ảnh vừa chọn
-                                let img = parentCard.querySelector(".image-preview");
+                                const imgDiv = parentCard.querySelector(".preview-container");
+                                if (imgDiv) imgDiv.classList.remove("d-none");
+                                const img = parentCard.querySelector(".image-preview");
                                 if (img) {
                                     img.src = e.target.result;
                                     img.classList.remove("d-none");
                                 }
                             }
                         };
-                        // Đọc file và chuyển sang dạng base64 để gán vào src của thẻ <img>
                         reader.readAsDataURL(file);
                     }
                 }
             });
         });
     </script>
-
 @endsection

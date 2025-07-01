@@ -47,32 +47,37 @@
             <div class="row g-3">
                 @forelse ($multiple_data as $item)
                     <div class="col-12 col-sm-6 col-lg-4">
-                        <a href="{{ route('flashcard_multiple_choice.show', $item->id_de_thi) }}"
-                            class="text-decoration-none">
-                            <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d">
-                                <div class="d-flex align-items-center">
-                                    <img src="./assets/img/test.jpg" alt="Icon" class="rounded-circle bg-primary p-1"
-                                        width="50">
-                                    <div class="ms-3">
-                                        <h5 class="h6 mb-1">Bài kiểm tra:
-                                            <strong>{{ $item->ten_de_thi }}</strong>
-                                        </h5>
-                                        <h5 class="h6 mb-1">Số câu đúng:
-                                            <strong>{{ $item->so_cau_dung }} / {{ $item->tong_so_cau }}</strong>
-                                        </h5>
-                                        <h5 class="h6 mb-1">Điểm:
-                                            <strong>{{ $item->diem }}</strong>
-                                        </h5>
-                                        <p class="text-muted mb-1"> Thời gian hoàn thành:
-                                            <strong>{{ $item->thoi_gian }}</strong>
-                                        </p>
-                                        <p class="text-muted mb-1"> Người tạo:
-                                            <strong>{{ $item->nguoi_tao }}</strong>
-                                        </p>
-                                    </div>
+                        <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d">
+                            <div class="d-flex align-items-center">
+                                <img src="./assets/img/test.jpg" alt="Icon" class="rounded-circle bg-primary p-1"
+                                    width="50">
+                                <div class="ms-3">
+                                    <h5 class="h6 mb-1">Bài kiểm tra:
+                                        <strong>{{ $item->ten_de_thi }}</strong>
+                                    </h5>
+                                    <h5 class="h6 mb-1">Số câu đúng:
+                                        <strong>{{ $item->so_cau_dung }} / {{ $item->tong_so_cau }}</strong>
+                                    </h5>
+                                    <h5 class="h6 mb-1">Điểm:
+                                        <strong>{{ $item->diem }}</strong>
+                                    </h5>
+                                    <p class="text-muted mb-1">Thời gian hoàn thành:
+                                        <strong>{{ $item->thoi_gian }}</strong>
+                                    </p>
+                                    <p class="text-muted mb-2">Người tạo:
+                                        <strong>{{ $item->nguoi_tao }}</strong>
+                                    </p>
+                                    <a href="{{ route('user.history_multiple_choice_detail', $item->id_de_thi) }}"
+                                        class="btn btn-sm btn-outline-primary">
+                                        Xem chi tiết
+                                    </a>
+                                    <a href="{{ route('flashcard_multiple_choice.show', $item->id_de_thi) }}"
+                                        class="btn btn-sm btn-outline-secondary ms-2">
+                                        Làm lại
+                                    </a>
                                 </div>
                             </div>
-                        </a>
+                        </div>
                     </div>
                 @empty
                     <p class="text-muted">Chưa học thẻ nào</p>

@@ -6,6 +6,9 @@ use App\AI\Ochat;
 use App\Models\Answer;
 use App\Models\AnswerUser;
 use App\Models\Card;
+use App\Models\ClassRoom;
+use App\Models\ClassroomFlashcard;
+use App\Models\FlashcardSet;
 use App\Models\Image;
 use App\Models\Question;
 use App\Models\Subject;
@@ -60,7 +63,14 @@ class FlashcardDefineEssayController extends Controller
     public function create()
     {
         $subjects = Subject::all();
-        return view('user.flashcard_define_essay.create', compact('subjects'));
+
+        // Nếu người dùng là giáo viên thì lấy danh sách lớp học
+        $myClassrooms = [];
+        if (auth()->user()->roles === 'teacher') {
+            $myClassrooms = ClassRoom::where('teacher_id', auth()->id())->get();
+        }
+
+        return view('user.flashcard_define_essay.create', compact('subjects', 'myClassrooms'));
     }
 
     public function store(Request $request)
@@ -73,8 +83,9 @@ class FlashcardDefineEssayController extends Controller
             'question_content.*' => 'required|string',
             'answer_content' => 'required|array',
             'answer_content.*' => 'required|string',
-            'image_name' => 'required|array',
-            'image_name.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image_name' => 'nullable|array',
+            'image_name.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'classroom_id' => 'nullable|exists:class_rooms,id',
         ], [
             'subject_id.required' => 'Vui lòng chọn môn học.',
             'subject_id.exists' => 'Môn học không tồn tại.',
@@ -91,6 +102,7 @@ class FlashcardDefineEssayController extends Controller
             'image_name.*.image' => 'File tải lên phải là hình ảnh.',
             'image_name.*.mimes' => 'Hình ảnh phải có định dạng jpeg, png, jpg, gif hoặc webp.',
             'image_name.*.max' => 'Kích thước hình ảnh không được vượt quá 2048KB.',
+            'classroom_id.exists' => 'Lớp học không tồn tại.',
         ]);
 
         // Tạo chủ đề mới nếu cần
@@ -99,10 +111,34 @@ class FlashcardDefineEssayController extends Controller
         $topic->subject_id = $data['subject_id'];
         $topic->save();
 
+        $flashcardSet = new FlashcardSet();
+        $flashcardSet->title = $data['topic_title'];
+        $flashcardSet->description = 'Tự động tạo từ form giáo viên'; // có thể sửa theo nội dung thật
+        $flashcardSet->user_id = auth()->id();
+        $flashcardSet->save();
+
+        // Nếu giáo viên chọn lớp học, lưu vào bảng classroom_flashcards
+        if (!empty($data['classroom_id'])) {
+            $exists = ClassroomFlashcard::where('classroom_id', $data['classroom_id'])
+                ->where('flashcard_set_id', $flashcardSet->id)
+                ->exists();
+
+            if (!$exists) {
+                ClassroomFlashcard::create([
+                    'classroom_id' => $data['classroom_id'],
+                    'flashcard_set_id' => $flashcardSet->id,
+                    'user_id' => auth()->id(),
+                ]);
+            }
+        }
+
+        // Lưu từng câu hỏi, câu trả lời, hình ảnh
+        $questionIds = [];
+
         foreach ($request->question_content as $index => $questionContent) {
             // Tạo thẻ flashcard
             $card = new Card();
-            $card->user_id = auth()->user()->id;
+            $card->user_id = auth()->id();
             $card->save();
 
             // Tạo câu hỏi
@@ -113,6 +149,9 @@ class FlashcardDefineEssayController extends Controller
             $question->card_id = $card->id;
             $question->topic_id = $topic->id;
             $question->save();
+
+            // ✅ Thêm dòng này để gom ID lại
+            $questionIds[] = $question->id;
 
             // Lưu câu trả lời
             $answer = new Answer();
@@ -133,6 +172,10 @@ class FlashcardDefineEssayController extends Controller
                 $hinhanh->save();
             }
         }
+
+        // 🔥 Cập nhật lại question_ids cho FlashcardSet
+        $flashcardSet->question_ids = implode(',', $questionIds);
+        $flashcardSet->save();
 
         return redirect()->route('user.dashboard')->with('success', 'Thêm thẻ thành công!');
     }

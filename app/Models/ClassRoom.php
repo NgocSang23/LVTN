@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property string $name
@@ -55,7 +55,7 @@ class ClassRoom extends Model
 
     public function sharedFlashcards()
     {
-        return $this->hasMany(ClassroomFlashcard::class);
+        return $this->hasMany(ClassroomFlashcard::class, 'classroom_id');
     }
 
     // Trong model ClassRoom
@@ -63,5 +63,15 @@ class ClassRoom extends Model
     {
         return $this->belongsToMany(User::class, 'classroom_users', 'classroom_id', 'user_id')
             ->withTimestamps(); // để lấy created_at
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'user_id'); // hoặc cột giáo viên
+    }
+
+    public function tests()
+    {
+        return $this->belongsToMany(Test::class, 'classroom_tests', 'classroom_id', 'test_id')->withTimestamps();
     }
 }

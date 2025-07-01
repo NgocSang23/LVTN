@@ -66,11 +66,28 @@ class FlashcardSetController extends Controller
     // Dùng để mở flashcard qua đường link (base64 encoded)
     public function share($encodedIds)
     {
+        // Giải mã danh sách ID từ chuỗi base64
         $decoded = base64_decode($encodedIds);
-        $ids = explode(',', $decoded);
-        $questions = Question::whereIn('id', $ids)->get();
+        if (!$decoded) {
+            abort(404, 'Đường dẫn không hợp lệ.');
+        }
 
-        return view('user.flashcard_check', compact('questions'));
+        $questionIds = explode(',', $decoded);
+
+        // Lấy danh sách câu hỏi kèm liên kết các model liên quan
+        $questions = Question::with(['answers', 'images', 'topic'])
+            ->whereIn('id', $questionIds)
+            ->get();
+
+        // Gán user nếu có đăng nhập
+        $user = auth()->check() ? auth()->user() : null;
+
+        // Dùng dummy FlashcardSet để truyền dữ liệu tối thiểu nếu cần
+        $set = new \stdClass();
+        $set->title = "Bộ flashcard tạm thời";
+        $set->description = null;
+
+        return view('user.flashcard_define_essay.share_view', compact('set', 'questions', 'user'));
     }
 
     // Dùng để chia sẻ công khai qua slug

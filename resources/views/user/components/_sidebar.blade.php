@@ -45,7 +45,7 @@
             </a>
         </li>
     @endcan
-    <li class="nav-item {{ request()->is('user/notifications*') ? 'active' : '' }}">
+    <li class="nav-item {{ request()->is('user/notifications*') }} active">
         <a class="nav-link" href="{{ route('user.notifications') }}">
             <i class="fa-solid fa-bell"></i>
             <span>Thông báo</span>
@@ -70,13 +70,14 @@
             <span>Khái niệm / Tự luận</span>
         </a>
     </li>
-
-    <li class="nav-item active">
-        <a class="nav-link" href="{{ route('flashcard_multiple_choice.create') }}">
-            <i class="fas fa-fw fa-cog"></i>
-            <span>Trắc nghiệm</span>
-        </a>
-    </li>
+    @can('teacher')
+        <li class="nav-item active">
+            <a class="nav-link" href="{{ route('flashcard_multiple_choice.create') }}">
+                <i class="fas fa-fw fa-cog"></i>
+                <span>Trắc nghiệm</span>
+            </a>
+        </li>
+    @endcan
 
     <li class="nav-item active">
         <a class="nav-link" href="#">

@@ -83,26 +83,33 @@
 
             <!-- Dropdown - Thông báo -->
             <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="alertsDropdown"
-                style="min-width: 300px;">
+                style="min-width: 300px;" id="notificationDropdown">
                 <h6 class="dropdown-header">🔔 Thông báo</h6>
 
-                @forelse ($notifications as $note)
-                    <a class="dropdown-item d-flex align-items-start small text-wrap" href="#">
-                        <div class="me-2">
-                            <div class="icon-circle bg-primary text-white">
-                                <i class="fas fa-info-circle"></i>
+                @foreach ($notifications as $note)
+                    <div class="dropdown-item d-flex align-items-start justify-content-between small text-wrap">
+                        <a href="{{ $note->url ?? '#' }}" class="d-flex text-decoration-none text-dark">
+                            <div class="me-2">
+                                <div class="icon-circle bg-primary text-white">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <div class="small text-gray-500">{{ $note->created_at->format('d/m/Y H:i') }}</div>
-                            <span class="{{ $note->is_read ? '' : 'fw-bold' }}">
-                                {!! \Illuminate\Support\Str::limit($note->title, 50) !!}
-                            </span>
-                        </div>
-                    </a>
-                @empty
-                    <span class="dropdown-item text-muted">Không có thông báo nào</span>
-                @endforelse
+                            <div>
+                                <div class="small text-gray-500">{{ $note->created_at->format('d/m/Y H:i') }}</div>
+                                <span class="{{ $note->is_read ? '' : 'fw-bold' }}">
+                                    {!! \Illuminate\Support\Str::limit($note->title, 50) !!}
+                                </span>
+                            </div>
+                        </a>
+                        <form method="POST" action="{{ route('notifications.delete', $note->id) }}" class="ms-2">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-link text-danger p-0" title="Xoá">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
 
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item text-center small text-gray-500" href="{{ route('user.notifications') }}">
@@ -158,3 +165,24 @@
         </li>
     </ul>
 </nav>
+
+<script>
+    function fetchNotifications() {
+        fetch('/api/notifications/latest')
+            .then(res => res.json())
+            .then(data => {
+                const dropdown = document.querySelector('#notificationDropdown');
+                if (dropdown) dropdown.innerHTML = data.html;
+
+                const badge = document.querySelector('.badge-counter');
+                if (badge) {
+                    badge.textContent = data.unread;
+                    badge.style.display = data.unread > 0 ? 'inline-block' : 'none';
+                }
+            });
+    }
+
+    // Gọi mỗi 5 giây
+    setInterval(fetchNotifications, 5000);
+    fetchNotifications(); // Gọi lần đầu
+</script>
