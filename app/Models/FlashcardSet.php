@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property string $title
@@ -70,5 +70,10 @@ class FlashcardSet extends Model
                 $set->slug = Str::slug($set->title . '-' . uniqid());
             }
         });
+    }
+
+    public function assignments()
+    {
+        return $this->belongsToMany(Assignment::class, 'assignments', 'flashcard_set_id', 'assignment_id')->withTimestamps();
     }
 }

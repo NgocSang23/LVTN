@@ -69,7 +69,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Ho_Chi_Minh',
 
     /*
     |--------------------------------------------------------------------------
@@ -196,6 +196,7 @@ return [
         App\Providers\RouteServiceProvider::class,
 
         OpenAI\Laravel\ServiceProvider::class,
+        // Maatwebsite\Excel\ExcelServiceProvider::class,
     ],
 
     /*
@@ -211,6 +212,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'ExampleClass' => App\Example\ExampleClass::class,
+        // 'Excel' => Maatwebsite\Excel\Facades\Excel::class,
     ])->toArray(),
 
 ];

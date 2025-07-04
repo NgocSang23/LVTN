@@ -5,141 +5,491 @@
 @section('content')
     <div class="container py-4">
         {{-- Thông tin lớp học --}}
-        <div class="card shadow-sm mb-4 border-0" style="border-radius: 14px;">
-            <div class="card-body d-flex justify-content-between align-items-start flex-wrap position-relative">
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
+            <div class="card-body d-flex justify-content-between align-items-start flex-wrap gap-3">
                 <div>
-                    <h2 class="fw-bold text-primary mb-1">{{ $classroom->name }}</h2>
+                    <h2 class="fw-bold text-primary mb-2">{{ $classroom->name }}</h2>
                     <p class="mb-1">
-                        Mã lớp:
-                        <span class="badge bg-secondary text-white fw-bold px-2 py-1">
-                            {{ $classroom->code }}
-                        </span>
+                        <span class="text-body-secondary me-2">Mã lớp:</span>
+                        <span class="badge bg-secondary text-white fw-semibold px-2 py-1">{{ $classroom->code }}</span>
                     </p>
                     <p class="text-muted mb-0">{{ $classroom->description ?: 'Không có mô tả' }}</p>
                 </div>
-                <div class="text-end mt-2 mt-md-0">
-                    <span class="badge bg-info text-dark rounded-pill fs-6 px-3 py-2 shadow-sm">
+                <div class="text-md-end">
+                    <span class="badge bg-light text-dark border border-info px-3 py-2 rounded-pill shadow-sm">
                         {{ $classroom->users->count() }} học viên
                     </span>
                 </div>
             </div>
         </div>
 
-        {{-- ✅ Nút tạo bài kiểm tra (chỉ hiển thị nếu là giáo viên) --}}
-        @can('teacher')
-            <div class="text-end mb-4">
+        {{-- Thống kê nhanh --}}
+        <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 text-center">
+                    <div class="card-body">
+                        <h4 class="fw-bold text-primary">{{ $total }}</h4>
+                        <p class="text-muted mb-0">Tổng học viên</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 text-center">
+                    <div class="card-body">
+                        <h4 class="fw-bold text-success">{{ number_format($avgScoreAll, 2) }}</h4>
+                        <p class="text-muted mb-0">Điểm trung bình lớp</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 text-center">
+                    <div class="card-body">
+                        <h4 class="fw-bold text-warning">{{ $completedCount }}/{{ $total }}</h4>
+                        <p class="text-muted mb-0">Đã làm bài kiểm tra</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Nút chức năng --}}
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            @can('teacher')
                 <a href="{{ route('flashcard_multiple_choice.create', ['classroom_id' => $classroom->id]) }}"
-                    class="btn btn-primary rounded-3">
+                    class="btn btn-primary rounded-pill shadow-sm">
                     <i class="fa-solid fa-file-circle-plus me-1"></i> Tạo bài kiểm tra mới
                 </a>
-            </div>
-        @endcan
+            @endcan
 
-        {{-- Nút rời lớp cho học viên --}}
-        @can('student')
-            <div class="text-end mb-4">
-                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#leaveClassModal">
+            @can('student')
+                <button class="btn btn-outline-danger rounded-pill shadow-sm" data-bs-toggle="modal"
+                    data-bs-target="#leaveClassModal">
                     <i class="fa-solid fa-door-open me-1"></i> Rời lớp học
                 </button>
-            </div>
-        @endcan
+            @endcan
+        </div>
 
-        {{-- Danh sách học viên cho giáo viên --}}
-        @can('teacher')
-            <h4 class="fw-semibold mt-4 mb-3">Danh sách học viên</h4>
+        {{-- Tabs điều hướng --}}
+        <ul class="nav nav-tabs nav-fill mb-4 border-0 shadow-sm rounded-3 overflow-hidden" id="classroomTabs"
+            role="tablist">
+            @can('teacher')
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students"
+                        type="button" role="tab" aria-controls="students" aria-selected="true">
+                        👨‍🎓 Học viên
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="results-tab" data-bs-toggle="tab" data-bs-target="#results" type="button"
+                        role="tab" aria-controls="results" aria-selected="false">
+                        📊 Kết quả
+                    </button>
+                </li>
+            @endcan
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="flashcard-tab" data-bs-toggle="tab" data-bs-target="#flashcardTab"
+                    type="button" role="tab" aria-controls="flashcardTab" aria-selected="false">
+                    📚 Flashcard
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="test-tab" data-bs-toggle="tab" data-bs-target="#testTab" type="button"
+                    role="tab" aria-controls="testTab" aria-selected="false">
+                    📝 Bài kiểm tra
+                </button>
+            </li>
+        </ul>
 
-            @if ($classroom->members->count())
-                <div class="table-responsive">
+        {{-- ===== TAB CONTENT: Nội dung từng tab ===== --}}
+        <div class="tab-content" id="classroomTabsContent">
+
+            {{-- ==== TAB: DANH SÁCH HỌC VIÊN ==== --}}
+            <div class="tab-pane fade show active" id="students" role="tabpanel" aria-labelledby="students-tab">
+                @can('teacher')
+                    {{-- Form tìm kiếm học viên --}}
+                    <form method="GET" class="mb-3">
+                        <input type="text" name="search" value="{{ request('search') }}" class="form-control"
+                            placeholder="🔍 Tìm theo tên hoặc email...">
+                    </form>
+
+                    {{-- Danh sách học viên --}}
+                    <h4 class="fw-semibold mb-3">📋 Danh sách học viên</h4>
+
+                    @if ($classroom->members->count())
+                        <div class="table-responsive" style="max-height: 500px;">
+                            <table class="table table-bordered table-hover table-striped align-middle text-center shadow-sm">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th>👤 Họ tên</th>
+                                        <th>📧 Email</th>
+                                        <th>📅 Ngày tham gia</th>
+                                        <th>⚙️ Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($classroom->members as $index => $user)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ $user->name }}</td>
+                                            <td>{{ $user->email }}</td>
+                                            <td>{{ optional($user->pivot->created_at)->format('d/m/Y') ?? 'Không rõ' }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
+                                                    data-bs-target="#removeStudentModal"
+                                                    onclick="prepareRemoveStudent({{ $classroom->id }}, {{ $user->id }})">
+                                                    <i class="fa-solid fa-user-xmark me-1"></i> Xoá
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-info">Chưa có học viên nào tham gia lớp học này.</div>
+                    @endif
+                @endcan
+
+                {{-- Lọc học viên theo xếp loại học viên --}}
+                <form method="GET" class="row row-cols-md-auto g-2 align-items-center mb-3">
+                    <div class="col">
+                        <label for="rank" class="form-label mb-0 small">Xếp loại</label>
+                        <select name="rank" id="rank" class="form-select">
+                            <option value="">-- Tất cả --</option>
+                            <option value="Giỏi" {{ request('rank') == 'Giỏi' ? 'selected' : '' }}>Giỏi</option>
+                            <option value="Khá" {{ request('rank') == 'Khá' ? 'selected' : '' }}>Khá</option>
+                            <option value="Trung bình" {{ request('rank') == 'Trung bình' ? 'selected' : '' }}>Trung bình
+                            </option>
+                            <option value="Yếu" {{ request('rank') == 'Yếu' ? 'selected' : '' }}>Yếu</option>
+                        </select>
+                    </div>
+
+                    <div class="col">
+                        <button type="submit" class="btn btn-outline-primary mt-3 mt-md-4">
+                            <i class="fa-solid fa-filter me-1"></i> Lọc
+                        </button>
+                    </div>
+                </form>
+
+                {{-- Bảng xếp loại học viên --}}
+                <hr>
+                <h4 class="fw-semibold mb-3">📊 Bảng xếp loại học viên</h4>
+                <div class="table-responsive" style="max-height: 500px;">
                     <table class="table table-bordered table-hover table-striped align-middle text-center shadow-sm">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width: 50px;">#</th>
-                                <th>👤 Họ tên</th>
+                                <th>👤 Học viên</th>
                                 <th>📧 Email</th>
-                                <th>📅 Ngày tham gia</th>
-                                <th>⚙️ Thao tác</th>
+                                <th>📈 Điểm TB</th>
+                                <th>📝 Làm bài</th>
+                                <th>🏅 Xếp loại</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach ($classroom->members as $index => $user)
+                            @php
+                                $filteredRatings = $ratings->filter(function ($r) {
+                                    $rank = request('rank');
+                                    return empty($rank) || $r['rank'] === $rank;
+                                });
+                            @endphp
+                            @foreach ($filteredRatings as $r)
+                                @php
+                                    $color = match ($r['rank']) {
+                                        'Giỏi' => 'success',
+                                        'Khá' => 'primary',
+                                        'Trung bình' => 'warning',
+                                        default => 'danger',
+                                    };
+                                @endphp
                                 <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $user->name }}</td>
-                                    <td>{{ $user->email }}</td>
-                                    <td>{{ optional($user->pivot->created_at)->format('d/m/Y') ?? 'Không rõ' }}</td>
-                                    <td>
-                                        <!-- Nút xoá -->
-                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
-                                            data-bs-target="#removeStudentModal"
-                                            onclick="prepareRemoveStudent({{ $classroom->id }}, {{ $user->id }})">
-                                            <i class="fa-solid fa-user-xmark me-1"></i> Xoá
-                                        </button>
-                                    </td>
+                                    <td>{{ $r['name'] }}</td>
+                                    <td>{{ $r['email'] }}</td>
+                                    <td>{{ $r['avg'] }}</td>
+                                    <td>{{ $r['attempts'] }} lần</td>
+                                    <td><span class="badge bg-{{ $color }}">{{ $r['rank'] }}</span></td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-            @else
-                <div class="alert alert-info">Chưa có học viên nào tham gia lớp học này.</div>
-            @endif
-        @endcan
+            </div>
 
-        {{-- Danh sách bộ flashcard được chia sẻ --}}
-        <h4 class="fw-semibold mt-4 mb-3">📚 Bộ flashcard được chia sẻ</h4>
-        @php
-            $sharedSets = $classroom->sharedFlashcards->unique('flashcard_set_id');
-        @endphp
-        @if ($sharedSets->count())
+            {{-- ==== TAB: KẾT QUẢ HỌC TẬP ==== --}}
+            <div class="tab-pane fade" id="results" role="tabpanel" aria-labelledby="results-tab">
+                @can('teacher')
+                    {{-- Export + Nhắc nhở --}}
+                    <div class="d-flex justify-content-end flex-wrap mb-3 gap-2">
+                        <a href="{{ route('classrooms.export', $classroom->id) }}" class="btn btn-success">
+                            <i class="fa-solid fa-download me-1"></i> Tải Excel
+                        </a>
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal"
+                            data-bs-target="#notifyIncompleteModal">
+                            <i class="fa-solid fa-bell me-1"></i> Nhắc chưa làm bài
+                        </button>
+                    </div>
 
-            <div class="row">
-                @foreach ($sharedSets as $item)
-                    @php
-                        $set = $item->flashcardSet;
-                    @endphp
-                    @if ($set && !empty($set->question_ids))
-                        <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card shadow-sm border-0 h-100" style="border-radius: 14px;">
-                                <div class="card-body d-flex flex-column justify-content-between">
-                                    <div>
-                                        <h5 class="fw-bold text-primary">{{ $set->title }}</h5>
-                                        <p class="text-muted mb-1">{{ $set->description ?? 'Không có mô tả' }}</p>
-                                    </div>
-                                    <div class="mt-3 text-end">
-                                        <a href="{{ route('user.flashcard_define_essay', ['ids' => $set->question_ids]) }}"
-                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="fa-solid fa-eye me-1"></i> Xem bộ thẻ
-                                        </a>
-                                    </div>
+                    {{-- Lọc theo bài kiểm tra --}}
+                    <form method="GET" class="mb-3">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-auto">
+                                <select name="test_id" class="form-select" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả bài kiểm tra --</option>
+                                    @foreach ($classroom->tests as $test)
+                                        <option value="{{ $test->id }}"
+                                            {{ request('test_id') == $test->id ? 'selected' : '' }}>
+                                            {{ $test->content }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+
+                    {{-- Bảng kết quả học tập --}}
+                    <h4 class="fw-semibold mb-3">📊 Kết quả học tập</h4>
+                    @if ($histories->count())
+                        <div class="table-responsive" style="max-height: 500px;">
+                            <table class="table table-hover table-bordered table-striped text-center shadow-sm">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>👤 Học viên</th>
+                                        <th>🌟 Trung bình</th>
+                                        <th>📝 Bài kiểm tra</th>
+                                        <th>✅ Đúng</th>
+                                        <th>❌ Sai</th>
+                                        <th>📈 Điểm</th>
+                                        <th>⏳ Thời gian nộp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php $rowNumber = 1; @endphp
+                                    @foreach ($classroom->members as $student)
+                                        @if ($histories->has($student->id))
+                                            @foreach ($histories[$student->id] as $record)
+                                                <tr>
+                                                    <td>{{ $rowNumber++ }}</td>
+                                                    <td>{{ $student->name }}</td>
+                                                    <td>{{ number_format($avgScores[$student->id] ?? 0, 2) }}</td>
+                                                    <td>{{ $record->test->content ?? 'N/A' }}</td>
+                                                    <td>{{ $record->correct_count }} / {{ $record->total_questions }}</td>
+                                                    <td>{{ $record->total_questions - $record->correct_count }}</td>
+                                                    <td>{{ $record->score }}</td>
+                                                    <td>{{ \Carbon\Carbon::parse($record->created_at)->timezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <tr>
+                                                <td>{{ $rowNumber++ }}</td>
+                                                <td>{{ $student->name }}</td>
+                                                <td colspan="6" class="text-muted fst-italic">Chưa làm bài nào</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-info">Chưa có học viên nào làm bài kiểm tra.</div>
+                    @endif
+
+                    {{-- Phân tích theo bài kiểm tra --}}
+                    <h5 class="fw-bold mt-4 mb-3">📋 Phân tích theo từng bài kiểm tra</h5>
+                    @if ($testStats->count())
+                        <table class="table table-hover table-bordered table-striped shadow-sm text-center">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>📝 Tên bài</th>
+                                    <th>👥 Số lượt làm</th>
+                                    <th>📈 Điểm TB</th>
+                                    <th>🔼 Cao nhất</th>
+                                    <th>🔽 Thấp nhất</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($testStats as $index => $stat)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $stat['test_title'] }}</td>
+                                        <td>{{ $stat['total_attempts'] }}</td>
+                                        <td>{{ $stat['avg_score'] }}</td>
+                                        <td>{{ $stat['highest_score'] }}</td>
+                                        <td>{{ $stat['lowest_score'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @else
+                        <div class="alert alert-info">Chưa có bài kiểm tra nào để thống kê.</div>
+                    @endif
+
+                    <div class="row g-4 mt-4">
+                        <div class="col-lg-6">
+                            <div class="card shadow-sm rounded-3 p-3 h-100">
+                                <h4 class="fw-bold text-dark mb-3 text-center">📉 Biểu đồ điểm trung bình học viên</h4>
+                                <div class="chart-container" style="height: 300px;">
+                                    <canvas id="avgScoreChart"></canvas>
                                 </div>
                             </div>
                         </div>
-                    @endif
-                @endforeach
-            </div>
-        @else
-            <div class="alert alert-info">Chưa có bộ flashcard nào được chia sẻ cho lớp học này.</div>
-        @endif
-
-        {{-- ✅ Danh sách bài kiểm tra đã chia sẻ cho lớp --}}
-        <h4 class="fw-semibold mt-4 mb-3">📝 Bài kiểm tra đã chia sẻ</h4>
-
-        @if ($classroom->tests->count())
-            <div class="row">
-                @foreach ($classroom->tests as $test)
-                    <div class="col-md-6 col-lg-4 mb-4">
-                        <div class="card shadow-sm border-0 h-100" style="border-radius: 14px;">
-                            <div class="card-body d-flex flex-column justify-content-between">
-                                <div>
-                                    <h5 class="fw-bold text-dark">📝 {{ $test->content }}</h5>
-                                    <p class="text-muted mb-1">Thời gian:
-                                        {{ \Carbon\Carbon::parse($test->time)->format('i') }} phút</p>
-                                    <p class="text-muted small mb-0">Tác giả: {{ $test->user->name ?? 'Không rõ' }}</p>
+                        <div class="col-lg-6">
+                            <div class="card shadow-sm rounded-3 p-3 h-100">
+                                <h4 class="fw-bold text-dark mb-3 text-center">📊 Tỷ lệ hoàn thành bài kiểm tra</h4>
+                                <div class="chart-container d-flex justify-content-center align-items-center"
+                                    style="height: 300px;">
+                                    <canvas id="completionPie" width="300" height="300"></canvas>
                                 </div>
-                                <div class="mt-3 text-end">
-                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                                        data-bs-target="#confirmTestModal"
-                                        onclick="showTestModal(
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Nhúng thư viện Chart.js --}}
+                    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            // Average Score Chart
+                            const ctx = document.getElementById('avgScoreChart');
+                            if (ctx) {
+                                new Chart(ctx, {
+                                    type: 'bar',
+                                    data: {
+                                        labels: {!! json_encode($avgScoresFull->pluck('name')) !!},
+                                        datasets: [{
+                                            label: 'Điểm trung bình',
+                                            data: {!! json_encode($avgScoresFull->pluck('score')) !!},
+                                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                            borderColor: 'rgba(54, 162, 235, 1)',
+                                            borderWidth: 1,
+                                            borderRadius: 8
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true,
+                                                max: 10,
+                                                grid: {
+                                                    color: 'rgba(0, 0, 0, 0.05)'
+                                                }
+                                            },
+                                            x: {
+                                                grid: {
+                                                    display: false
+                                                }
+                                            }
+                                        },
+                                        plugins: {
+                                            legend: {
+                                                display: false
+                                            },
+                                            tooltip: {
+                                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                                titleColor: '#fff',
+                                                bodyColor: '#fff'
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+
+                            // Completion Pie Chart
+                            const ctxPie = document.getElementById('completionPie');
+                            if (ctxPie) {
+                                new Chart(ctxPie, {
+                                    type: 'pie',
+                                    data: {
+                                        labels: ['Đã hoàn thành', 'Chưa làm'],
+                                        datasets: [{
+                                            data: [{{ $done }}, {{ $notDone }}],
+                                            backgroundColor: ['#28a745', '#dc3545'],
+                                            borderColor: '#fff',
+                                            borderWidth: 2
+                                        }]
+                                    },
+                                    options: {
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            legend: {
+                                                position: 'bottom',
+                                                labels: {
+                                                    font: {
+                                                        size: 14
+                                                    }
+                                                }
+                                            },
+                                            tooltip: {
+                                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                                titleColor: '#fff',
+                                                bodyColor: '#fff'
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    </script>
+                @endcan
+            </div>
+
+            {{-- ==== TAB: FLASHCARD CHIA SẺ ==== --}}
+            <div class="tab-pane fade" id="flashcardTab" role="tabpanel" aria-labelledby="flashcard-tab">
+                <h4 class="fw-semibold mb-3">📚 Bộ flashcard được chia sẻ</h4>
+                @php $sharedSets = $classroom->sharedFlashcards->unique('flashcard_set_id'); @endphp
+
+                @if ($sharedSets->count())
+                    <div class="row" style="max-height: 500px; overflow-y: auto;">
+                        @foreach ($sharedSets as $item)
+                            @php $set = $item->flashcardSet; @endphp
+                            @if ($set && !empty($set->question_ids))
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card shadow-sm h-100 border-0" style="border-radius: 14px;">
+                                        <div class="card-body d-flex flex-column justify-content-between">
+                                            <div>
+                                                <h5 class="fw-bold text-primary">{{ $set->title }}</h5>
+                                                <p class="text-muted mb-1">{{ $set->description ?? 'Không có mô tả' }}</p>
+                                            </div>
+                                            <div class="mt-3 text-end">
+                                                <a href="{{ route('user.flashcard_define_essay', ['ids' => $set->question_ids]) }}"
+                                                    class="btn btn-sm btn-outline-primary">
+                                                    <i class="fa-solid fa-eye me-1"></i> Xem bộ thẻ
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @else
+                    <div class="alert alert-info">Chưa có bộ flashcard nào được chia sẻ.</div>
+                @endif
+            </div>
+
+            {{-- ==== TAB: BÀI KIỂM TRA CHIA SẺ ==== --}}
+            <div class="tab-pane fade" id="testTab" role="tabpanel" aria-labelledby="test-tab">
+                <h4 class="fw-semibold mb-3">📝 Bài kiểm tra đã chia sẻ</h4>
+
+                @if ($classroom->tests->count())
+                    <div class="row" style="max-height: 500px; overflow-y: auto;">
+                        @foreach ($classroom->tests as $test)
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card shadow-sm h-100 border-0" style="border-radius: 14px;">
+                                    <div class="card-body d-flex flex-column justify-content-between">
+                                        <div>
+                                            <h5 class="fw-bold text-dark">📝 {{ $test->content }}</h5>
+                                            <p class="text-muted mb-1">⏱
+                                                {{ \Carbon\Carbon::parse($test->time)->format('i') }} phút</p>
+                                            <p class="text-muted small mb-0">👤 {{ $test->user->name ?? 'Không rõ' }}</p>
+                                        </div>
+                                        <div class="mt-3 text-end">
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                                data-bs-target="#confirmTestModal"
+                                                onclick="showTestModal(
                                             '{{ $test->id }}',
                                             '{{ $test->content }}',
                                             '{{ \Carbon\Carbon::parse($test->time)->format('i') }}',
@@ -148,18 +498,47 @@
                                             '{{ $test->questionNumbers->first()->question_number ?? 'Không có' }}',
                                             '{{ route('flashcard_multiple_choice.show', $test->id) }}'
                                         )">
-                                        <i class="fa-solid fa-eye me-1"></i> Xem chi tiết
-                                    </button>
-
+                                                <i class="fa-solid fa-eye me-1"></i> Xem chi tiết
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        @endforeach
                     </div>
-                @endforeach
+                @else
+                    <div class="alert alert-info">Chưa có bài kiểm tra nào được chia sẻ cho lớp học.</div>
+                @endif
             </div>
-        @else
-            <div class="alert alert-info">Chưa có bài kiểm tra nào được chia sẻ cho lớp học này.</div>
-        @endif
+        </div>
+    </div>
+
+    <!-- Modal xác nhận gửi thông báo -->
+    <div class="modal fade" id="notifyIncompleteModal" tabindex="-1" aria-labelledby="notifyIncompleteModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="notifyIncompleteModalLabel">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Xác nhận gửi thông báo
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    Bạn có chắc chắn muốn gửi thông báo đến <strong>các học viên chưa làm bài kiểm tra</strong>?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+
+                    <form method="POST" action="{{ route('classrooms.notifyIncomplete', $classroom->id) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Gửi thông báo
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Xác Nhận Làm Bài Kiểm Tra -->
@@ -221,7 +600,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Modal: Rời khỏi lớp học -->
     <div class="modal fade" id="leaveClassModal" tabindex="-1" aria-labelledby="leaveClassLabel" aria-hidden="true">

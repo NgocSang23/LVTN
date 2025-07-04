@@ -125,6 +125,9 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::delete('/classrooms/{classroom}/remove-student/{user}', [ClassroomController::class, 'removeStudent'])->name('classrooms.removeStudent');
     Route::get('/classrooms/{id}', [ClassroomController::class, 'show'])->name('classrooms.show');
 
+    // Classroom export
+    Route::get('/classrooms/{id}/export-results', [ClassroomController::class, 'exportResults'])->name('classrooms.export');
+
     // Notifications
     Route::get('/notifications', [UserController::class, 'notifications'])->name('user.notifications');
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.delete');
@@ -135,14 +138,18 @@ Route::middleware('auth')->prefix('user')->group(function () {
         $user->customNotifications()->where('is_read', false)->update(['is_read' => 1]);
         return response()->json(['status' => 'ok']);
     })->name('notifications.markRead');
-    Route::get('/api/notifications/latest', function () {
-        /** @var \App\Models\User $user */
-        $user = auth()->user();
-        $notifications = $user->customNotifications()->orderByDesc('created_at')->take(5)->get();
-        $unread = $notifications->where('is_read', false)->count();
-        $html = view('partials.notification_dropdown', compact('notifications'))->render();
-        return response()->json(['html' => $html, 'unread' => $unread]);
-    })->name('notifications.ajax');
+    // Route::get('/api/notifications/latest', function () {
+    //     /** @var \App\Models\User $user */
+    //     $user = auth()->user();
+    //     $notifications = $user->customNotifications()->orderByDesc('created_at')->take(5)->get();
+    //     $unread = $notifications->where('is_read', false)->count();
+    //     $html = view('partials.notification_dropdown', compact('notifications'))->render();
+    //     return response()->json(['html' => $html, 'unread' => $unread]);
+    // })->name('notifications.ajax');
+
+    Route::post('/classrooms/{id}/notify-incomplete', [ClassroomController::class, 'notifyIncompleteStudents'])
+        ->name('classrooms.notifyIncomplete')
+        ->middleware('can:teacher');
 
     // AI Suggestion
     Route::post('/ai/suggest-topic', [AiSuggestionController::class, 'suggest']);

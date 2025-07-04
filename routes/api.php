@@ -6,9 +6,18 @@ use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request; // ✅ Đúng
 
 Route::get('card_define_essay/{id}', [ApiController::class, 'card_define_essay'])->name('api.card_define');
 Route::get('card_multiple_choice/{id}', [ApiController::class, 'card_multiple_choice'])->name('api.card_multiple_choice');
+
+Route::middleware('auth:sanctum')->get('/notifications/latest', function (Request $request) {
+    $user = $request->user();
+    $notifications = $user->customNotifications()->orderByDesc('created_at')->take(5)->get();
+    $unread = $notifications->where('is_read', false)->count();
+    $html = view('partials.notification_dropdown', compact('notifications'))->render();
+    return response()->json(['html' => $html, 'unread' => $unread]);
+});
 
 // ===== ADMIN API ROUTES =====
 Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function () {

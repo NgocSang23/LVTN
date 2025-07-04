@@ -12,6 +12,7 @@
         "laravel/sanctum": "^3.2",
         "laravel/socialite": "^5.18",
         "laravel/tinker": "^2.8",
+        "maatwebsite/excel": "3.1.47",
         "openai-php/laravel": "^0.11.0",
         "thiagoprz/eloquent-composite-key": "^1.0"
     },
