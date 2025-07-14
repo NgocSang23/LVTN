@@ -24,9 +24,9 @@ Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function
 
     // --- 1. Quản lý người dùng ---
     Route::get('/users/pending', [UserManagementController::class, 'getPending']);
-    Route::delete('/users/{id}', [UserManagementController::class, 'destroy']);
     Route::get('/users/students', [UserManagementController::class, 'getStudents']);
     Route::post('/users/{id}/assign-teacher', [UserManagementController::class, 'assignTeacher']);
+    Route::post('users/{id}/revoke-teacher', [UserManagementController::class, 'revokeTeacher']);
 
     // --- 2. Kiểm duyệt flashcard ---
     Route::get('/flashcards', [FlashcardModerationController::class, 'index']);            // Lấy danh sách chờ duyệt
@@ -35,8 +35,7 @@ Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function
 
     // --- 3. Thống kê hệ thống ---
     Route::get('/statistics/overview', [StatisticsController::class, 'overview']);         // Tổng quan
-    Route::get('/statistics/flashcards', [StatisticsController::class, 'flashcardStats']); // Thống kê flashcard
-    Route::get('/statistics/users', [StatisticsController::class, 'userStats']);           // Thống kê người dùng
+    Route::get('/statistics/review-frequency', [StatisticsController::class, 'reviewFrequency']); // Thống kê lượt hoạt động mỗi ngày trong 7 ngày gần nhất:
 
     // --- 4. Gửi thông báo hệ thống ---
     Route::get('/notifications', [NotificationController::class, 'index']);               // Danh sách thông báo

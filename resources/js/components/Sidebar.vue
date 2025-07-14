@@ -4,7 +4,7 @@
         id="accordionSidebar"
     >
         <!-- Logo -->
-        <router-link
+        <div
             class="sidebar-brand d-flex align-items-center justify-content-center text-white"
             to="/dashboard"
         >
@@ -12,7 +12,7 @@
                 <i class="fa-solid fa-graduation-cap"></i>
             </div>
             <div class="sidebar-brand-text mx-3">Admin Panel</div>
-        </router-link>
+        </div>
 
         <hr class="sidebar-divider my-0 border-light" />
 
@@ -39,7 +39,7 @@
                 active-class="bg-primary"
             >
                 <i class="fa-solid fa-users"></i>
-                <span>Duyệt / Xoá người dùng</span>
+                <span>Danh sách người dùng</span>
             </router-link>
         </li>
 

@@ -13,20 +13,10 @@ class UserManagementController extends Controller
      */
     public function getPending()
     {
-        $users = User::whereNull('roles')->orWhere('roles', 'pending')->get();
+        // Lấy tất cả người dùng KHÔNG phải admin
+        $users = User::where('roles', '!=', 'admin')->get();
 
         return response()->json($users);
-    }
-
-    /**
-     * Xoá người dùng theo ID
-     */
-    public function destroy($id)
-    {
-        $user = User::findOrFail($id);
-        $user->delete();
-
-        return response()->json(['message' => 'Xoá người dùng thành công']);
     }
 
     /**
@@ -49,5 +39,14 @@ class UserManagementController extends Controller
         $user->save();
 
         return response()->json(['message' => 'Gán quyền giáo viên thành công']);
+    }
+
+    public function revokeTeacher($id)
+    {
+        $user = User::findOrFail($id);
+        $user->roles = 'student';
+        $user->save();
+
+        return response()->json(['message' => 'Huỷ quyền giáo viên thông']);
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Card;
+use App\Models\ClassRoom;
 use App\Models\Test;
 
 class UserController extends Controller
@@ -44,7 +45,12 @@ class UserController extends Controller
 
         $tests = Test::with(['questionnumbers.topic', 'user'])->latest()->get()->take(6);
 
-        return view('user.dashboard', compact('card_defines', 'card_essays', 'tests'));
+        $myClassrooms = [];
+        if (auth()->check() && auth()->user()->roles === 'teacher') {
+            $myClassrooms = ClassRoom::where('teacher_id', auth()->id())->get();
+        }
+
+        return view('user.dashboard', compact('card_defines', 'card_essays', 'tests', 'myClassrooms'));
     }
 
     public function logout(Request $request)

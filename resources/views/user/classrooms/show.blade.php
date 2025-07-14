@@ -16,6 +16,9 @@
                     <p class="text-muted mb-0">{{ $classroom->description ?: 'Không có mô tả' }}</p>
                 </div>
                 <div class="text-md-end">
+                    <span class="badge bg-light text-dark border border-info px-3 py-2 rounded-pill shadow-sm me-2">
+                        Giáo viên: {{ $classroom->teacher->name }}
+                    </span>
                     <span class="badge bg-light text-dark border border-info px-3 py-2 rounded-pill shadow-sm">
                         {{ $classroom->users->count() }} học viên
                     </span>
@@ -24,32 +27,34 @@
         </div>
 
         {{-- Thống kê nhanh --}}
-        <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0 text-center">
-                    <div class="card-body">
-                        <h4 class="fw-bold text-primary">{{ $total }}</h4>
-                        <p class="text-muted mb-0">Tổng học viên</p>
+        @can('teacher')
+            <div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 text-center">
+                        <div class="card-body">
+                            <h4 class="fw-bold text-primary">{{ $total }}</h4>
+                            <p class="text-muted mb-0">Tổng học viên</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 text-center">
+                        <div class="card-body">
+                            <h4 class="fw-bold text-success">{{ number_format($avgScoreAll, 2) }}</h4>
+                            <p class="text-muted mb-0">Điểm trung bình lớp</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 text-center">
+                        <div class="card-body">
+                            <h4 class="fw-bold text-warning">{{ $completedCount }}/{{ $total }}</h4>
+                            <p class="text-muted mb-0">Đã làm bài kiểm tra</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0 text-center">
-                    <div class="card-body">
-                        <h4 class="fw-bold text-success">{{ number_format($avgScoreAll, 2) }}</h4>
-                        <p class="text-muted mb-0">Điểm trung bình lớp</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0 text-center">
-                    <div class="card-body">
-                        <h4 class="fw-bold text-warning">{{ $completedCount }}/{{ $total }}</h4>
-                        <p class="text-muted mb-0">Đã làm bài kiểm tra</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        @endcan
 
         {{-- Nút chức năng --}}
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -97,6 +102,12 @@
                     📝 Bài kiểm tra
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="assignment-tab" data-bs-toggle="tab" data-bs-target="#assignmentTab"
+                    type="button" role="tab" aria-controls="assignmentTab" aria-selected="false">
+                    📌 {{ auth()->user()->roles === 'teacher' ? 'Bài tập đã giao' : 'Bài tập được giao' }}
+                </button>
+            </li>
         </ul>
 
         {{-- ===== TAB CONTENT: Nội dung từng tab ===== --}}
@@ -127,7 +138,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($classroom->members as $index => $user)
+                                    @foreach ($members as $index => $user)
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
                                             <td>{{ $user->name }}</td>
@@ -148,70 +159,70 @@
                     @else
                         <div class="alert alert-info">Chưa có học viên nào tham gia lớp học này.</div>
                     @endif
-                @endcan
 
-                {{-- Lọc học viên theo xếp loại học viên --}}
-                <form method="GET" class="row row-cols-md-auto g-2 align-items-center mb-3">
-                    <div class="col">
-                        <label for="rank" class="form-label mb-0 small">Xếp loại</label>
-                        <select name="rank" id="rank" class="form-select">
-                            <option value="">-- Tất cả --</option>
-                            <option value="Giỏi" {{ request('rank') == 'Giỏi' ? 'selected' : '' }}>Giỏi</option>
-                            <option value="Khá" {{ request('rank') == 'Khá' ? 'selected' : '' }}>Khá</option>
-                            <option value="Trung bình" {{ request('rank') == 'Trung bình' ? 'selected' : '' }}>Trung bình
-                            </option>
-                            <option value="Yếu" {{ request('rank') == 'Yếu' ? 'selected' : '' }}>Yếu</option>
-                        </select>
-                    </div>
+                    {{-- Lọc học viên theo xếp loại học viên --}}
+                    <form method="GET" class="row row-cols-md-auto g-2 align-items-center mb-3">
+                        <div class="col">
+                            <label for="rank" class="form-label mb-0 small">Xếp loại</label>
+                            <select name="rank" id="rank" class="form-select">
+                                <option value="">-- Tất cả --</option>
+                                <option value="Giỏi" {{ request('rank') == 'Giỏi' ? 'selected' : '' }}>Giỏi</option>
+                                <option value="Khá" {{ request('rank') == 'Khá' ? 'selected' : '' }}>Khá</option>
+                                <option value="Trung bình" {{ request('rank') == 'Trung bình' ? 'selected' : '' }}>Trung bình
+                                </option>
+                                <option value="Yếu" {{ request('rank') == 'Yếu' ? 'selected' : '' }}>Yếu</option>
+                            </select>
+                        </div>
 
-                    <div class="col">
-                        <button type="submit" class="btn btn-outline-primary mt-3 mt-md-4">
-                            <i class="fa-solid fa-filter me-1"></i> Lọc
-                        </button>
-                    </div>
-                </form>
+                        <div class="col">
+                            <button type="submit" class="btn btn-outline-primary mt-3 mt-md-4">
+                                <i class="fa-solid fa-filter me-1"></i> Lọc
+                            </button>
+                        </div>
+                    </form>
 
-                {{-- Bảng xếp loại học viên --}}
-                <hr>
-                <h4 class="fw-semibold mb-3">📊 Bảng xếp loại học viên</h4>
-                <div class="table-responsive" style="max-height: 500px;">
-                    <table class="table table-bordered table-hover table-striped align-middle text-center shadow-sm">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>👤 Học viên</th>
-                                <th>📧 Email</th>
-                                <th>📈 Điểm TB</th>
-                                <th>📝 Làm bài</th>
-                                <th>🏅 Xếp loại</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @php
-                                $filteredRatings = $ratings->filter(function ($r) {
-                                    $rank = request('rank');
-                                    return empty($rank) || $r['rank'] === $rank;
-                                });
-                            @endphp
-                            @foreach ($filteredRatings as $r)
-                                @php
-                                    $color = match ($r['rank']) {
-                                        'Giỏi' => 'success',
-                                        'Khá' => 'primary',
-                                        'Trung bình' => 'warning',
-                                        default => 'danger',
-                                    };
-                                @endphp
+                    {{-- Bảng xếp loại học viên --}}
+                    <hr>
+                    <h4 class="fw-semibold mb-3">📊 Bảng xếp loại học viên</h4>
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-bordered table-hover table-striped align-middle text-center shadow-sm">
+                            <thead class="table-dark">
                                 <tr>
-                                    <td>{{ $r['name'] }}</td>
-                                    <td>{{ $r['email'] }}</td>
-                                    <td>{{ $r['avg'] }}</td>
-                                    <td>{{ $r['attempts'] }} lần</td>
-                                    <td><span class="badge bg-{{ $color }}">{{ $r['rank'] }}</span></td>
+                                    <th>👤 Học viên</th>
+                                    <th>📧 Email</th>
+                                    <th>📈 Điểm TB</th>
+                                    <th>📝 Làm bài</th>
+                                    <th>🏅 Xếp loại</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                @php
+                                    $filteredRatings = $ratings->filter(function ($r) {
+                                        $rank = request('rank');
+                                        return empty($rank) || $r['rank'] === $rank;
+                                    });
+                                @endphp
+                                @foreach ($filteredRatings as $r)
+                                    @php
+                                        $color = match ($r['rank']) {
+                                            'Giỏi' => 'success',
+                                            'Khá' => 'primary',
+                                            'Trung bình' => 'warning',
+                                            default => 'danger',
+                                        };
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $r['name'] }}</td>
+                                        <td>{{ $r['email'] }}</td>
+                                        <td>{{ $r['avg'] }}</td>
+                                        <td>{{ $r['attempts'] }} lần</td>
+                                        <td><span class="badge bg-{{ $color }}">{{ $r['rank'] }}</span></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endcan
             </div>
 
             {{-- ==== TAB: KẾT QUẢ HỌC TẬP ==== --}}
@@ -228,11 +239,12 @@
                         </button>
                     </div>
 
-                    {{-- Lọc theo bài kiểm tra --}}
+                    {{-- Bộ lọc bài kiểm tra + thời gian --}}
                     <form method="GET" class="mb-3">
-                        <div class="row g-2 align-items-center">
+                        <div class="row g-2 align-items-end">
                             <div class="col-auto">
-                                <select name="test_id" class="form-select" onchange="this.form.submit()">
+                                <label for="test_id" class="form-label mb-0 small">Bài kiểm tra</label>
+                                <select name="test_id" id="test_id" class="form-select">
                                     <option value="">-- Tất cả bài kiểm tra --</option>
                                     @foreach ($classroom->tests as $test)
                                         <option value="{{ $test->id }}"
@@ -241,6 +253,27 @@
                                         </option>
                                     @endforeach
                                 </select>
+                            </div>
+
+                            <div class="col-auto">
+                                <label for="time_filter" class="form-label mb-0 small">Thời gian</label>
+                                <select name="time_filter" id="time_filter" class="form-select">
+                                    <option value="">-- Tất cả thời gian --</option>
+                                    <option value="week" {{ request('time_filter') == 'week' ? 'selected' : '' }}>Tuần này
+                                    </option>
+                                    <option value="month" {{ request('time_filter') == 'month' ? 'selected' : '' }}>Tháng này
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="col-auto d-flex gap-2">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fa-solid fa-filter me-1"></i> Lọc
+                                </button>
+                                <a href="{{ route('classrooms.show', $classroom->id) }}#results"
+                                    class="btn btn-outline-secondary">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Xoá bộ lọc
+                                </a>
                             </div>
                         </div>
                     </form>
@@ -453,9 +486,10 @@
                                                 <h5 class="fw-bold text-primary">{{ $set->title }}</h5>
                                                 <p class="text-muted mb-1">{{ $set->description ?? 'Không có mô tả' }}</p>
                                             </div>
+
                                             <div class="mt-3 text-end">
                                                 <a href="{{ route('user.flashcard_define_essay', ['ids' => $set->question_ids]) }}"
-                                                    class="btn btn-sm btn-outline-primary">
+                                                    class="btn btn-sm btn-outline-primary me-2">
                                                     <i class="fa-solid fa-eye me-1"></i> Xem bộ thẻ
                                                 </a>
                                             </div>
@@ -471,14 +505,18 @@
             </div>
 
             {{-- ==== TAB: BÀI KIỂM TRA CHIA SẺ ==== --}}
-            <div class="tab-pane fade" id="testTab" role="tabpanel" aria-labelledby="test-tab">
-                <h4 class="fw-semibold mb-3">📝 Bài kiểm tra đã chia sẻ</h4>
+            <div class="tab-pane fade" id="testTab" role="tabpanel" aria-labelledby="assignment-tab">
+                @php
+                    $tests = $classroom->tests->sortByDesc('created_at');
+                @endphp
 
-                @if ($classroom->tests->count())
-                    <div class="row" style="max-height: 500px; overflow-y: auto;">
-                        @foreach ($classroom->tests as $test)
+                {{-- Hiển thị BÀI KIỂM TRA --}}
+                @if ($tests->count())
+                    <h4 class="fw-semibold mb-3">📝 Bài kiểm tra đã chia sẻ</h4>
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        @foreach ($tests as $test)
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card shadow-sm h-100 border-0" style="border-radius: 14px;">
+                                <div class="card shadow-sm border-0">
                                     <div class="card-body d-flex flex-column justify-content-between">
                                         <div>
                                             <h5 class="fw-bold text-dark">📝 {{ $test->content }}</h5>
@@ -490,14 +528,69 @@
                                             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                                 data-bs-target="#confirmTestModal"
                                                 onclick="showTestModal(
-                                            '{{ $test->id }}',
-                                            '{{ $test->content }}',
-                                            '{{ \Carbon\Carbon::parse($test->time)->format('i') }}',
-                                            '{{ $test->user->name ?? 'Không rõ' }}',
-                                            '{{ $test->created_at->format('d/m/Y') }}',
-                                            '{{ $test->questionNumbers->first()->question_number ?? 'Không có' }}',
-                                            '{{ route('flashcard_multiple_choice.show', $test->id) }}'
-                                        )">
+                                                        '{{ $test->id }}',
+                                                        '{{ $test->content }}',
+                                                        '{{ \Carbon\Carbon::parse($test->time)->format('i') }}',
+                                                        '{{ $test->user->name ?? 'Không rõ' }}',
+                                                        '{{ $test->created_at->format('d/m/Y') }}',
+                                                        '{{ $test->questionNumbers->first()->question_number ?? 'Không có' }}',
+                                                        '{{ route('flashcard_multiple_choice.show', $test->id) }}'
+                                                    )">
+                                                <i class="fa-solid fa-eye me-1"></i> Xem chi tiết
+                                            </button>
+                                            @can('teacher')
+                                                <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal"
+                                                    data-bs-target="#assignTestModal"
+                                                    onclick="prepareTestAssignment('{{ $test->id }}', '{{ $classroom->id }}')">
+                                                    <i class="fa-solid fa-paper-plane me-1"></i> Giao lại
+                                                </button>
+                                            @endcan
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- Nếu cả hai đều rỗng --}}
+                @if ($tests->isEmpty())
+                    <div class="alert alert-info mt-3">Chưa có bài tập nào được giao cho lớp này.</div>
+                @endif
+            </div>
+
+            {{-- ==== TAB: BÀI TẬP GIAO ==== --}}
+            <div class="tab-pane fade" id="assignmentTab" role="tabpanel" aria-labelledby="test-tab">
+                <h4 class="fw-semibold mb-3">📝 Bài kiểm tra trắc nghiệm</h5>
+                @if ($classroom->tests->count())
+                    <div class="row" style="max-height: 500px; overflow-y: auto;">
+                        @foreach ($classroom->tests as $test)
+                            @php
+                                // Lấy deadline từ bảng trung gian (pivot)
+                                $deadline = \Carbon\Carbon::parse($test->pivot->deadline)->format('d/m/Y H:i');
+                            @endphp
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card shadow-sm h-100 border-0" style="border-radius: 14px;">
+                                    <div class="card-body d-flex flex-column justify-content-between">
+                                        <div>
+                                            <h5 class="fw-bold text-dark">📝 {{ $test->content }}</h5>
+                                            <p class="text-muted mb-1">⏱
+                                                {{ \Carbon\Carbon::parse($test->time)->format('i') }} phút</p>
+                                            <p class="text-muted mb-1">📅 Hạn nộp: {{ $deadline }}</p>
+                                            <p class="text-muted small mb-0">👤 {{ $test->user->name ?? 'Không rõ' }}</p>
+                                        </div>
+                                        <div class="mt-3 text-end">
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                                data-bs-target="#confirmTestModal"
+                                                onclick="showTestModal(
+                                                    '{{ $test->id }}',
+                                                    '{{ $test->content }}',
+                                                    '{{ \Carbon\Carbon::parse($test->time)->format('i') }}',
+                                                    '{{ $test->user->name ?? 'Không rõ' }}',
+                                                    '{{ $test->created_at->format('d/m/Y') }}',
+                                                    '{{ $test->questionNumbers->first()->question_number ?? 'Không có' }}',
+                                                    '{{ route('flashcard_multiple_choice.show', $test->id) }}'
+                                                )">
                                                 <i class="fa-solid fa-eye me-1"></i> Xem chi tiết
                                             </button>
                                         </div>
@@ -510,6 +603,37 @@
                     <div class="alert alert-info">Chưa có bài kiểm tra nào được chia sẻ cho lớp học.</div>
                 @endif
             </div>
+        </div>
+    </div>
+
+    {{-- Modal giao bài kiểm tra --}}
+    <div class="modal fade" id="assignTestModal" tabindex="-1" aria-labelledby="assignTestModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="POST" action="{{ route('classroom_tests.assign') }}" class="modal-content">
+                @csrf
+                <input type="hidden" name="test_id" id="assign_test_id">
+                <input type="hidden" name="classroom_id" id="assign_classroom_id">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignTestModalLabel">📤 Giao bài kiểm tra</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="deadline" class="form-label">📅 Hạn nộp</label>
+                        <input type="datetime-local" name="deadline" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Giao bài kiểm tra
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -628,6 +752,31 @@
     </div>
 
     <script>
+        function prepareTestAssignment(testId, classroomId) {
+            document.getElementById('assign_test_id').value = testId;
+            document.getElementById('assign_classroom_id').value = classroomId;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Nếu có tab đã lưu từ trước thì mở tab đó
+            const lastTab = localStorage.getItem('activeTab');
+            if (lastTab) {
+                const tabTrigger = document.querySelector(`button[data-bs-target="${lastTab}"]`);
+                if (tabTrigger) {
+                    new bootstrap.Tab(tabTrigger).show();
+                }
+            }
+
+            // Cập nhật tab mỗi lần người dùng chuyển
+            const tabButtons = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabButtons.forEach(button => {
+                button.addEventListener('shown.bs.tab', function(event) {
+                    const target = event.target.getAttribute('data-bs-target');
+                    localStorage.setItem('activeTab', target);
+                });
+            });
+        });
+
         function prepareRemoveStudent(classroomId, userId) {
             const form = document.getElementById('removeStudentForm');
             form.action = `/user/classrooms/${classroomId}/remove-student/${userId}`;

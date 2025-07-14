@@ -84,8 +84,18 @@ class ClassroomController extends Controller
             'users',
             'members',
             'sharedFlashcards.flashcardSet',
-            'tests'
+            'tests',
         ])->findOrFail($id);
+
+        // Xác định phạm vi thời gian theo request('time_filter')
+        $timeFilter = request('time_filter');
+        $timeStart = null;
+
+        if ($timeFilter === 'week') {
+            $timeStart = now()->startOfWeek(); // Đầu tuần
+        } elseif ($timeFilter === 'month') {
+            $timeStart = now()->startOfMonth(); // Đầu tháng
+        }
 
         // Kiểm tra quyền truy cập (nếu người dùng không phải giáo viên)
         if (auth()->user()->roles !== 'teacher') {
@@ -106,6 +116,7 @@ class ClassroomController extends Controller
         $histories = History::with(['test', 'user'])
             ->whereIn('user_id', $classroom->members->pluck('id'))
             ->whereHas('test.classrooms', fn($q) => $q->where('class_rooms.id', $classroom->id))
+            ->when($timeStart, fn($q) => $q->where('created_at', '>=', $timeStart)) // 🔥 lọc theo thời gian
             ->get()
             ->groupBy('user_id');
 
@@ -116,6 +127,7 @@ class ClassroomController extends Controller
         // ->pluck('avg_score', 'user_id') : Trích xuất cột 'avg_score' và sử dụng 'user_id' làm khóa của mảng kết quả, tạo ra một mảng [user_id => avg_score].
         $avgScores = History::select('user_id', DB::raw('AVG(score) as avg_score'))
             ->whereHas('test.classrooms', fn($q) => $q->where('class_rooms.id', $classroom->id))
+            ->when($timeStart, fn($q) => $q->where('created_at', '>=', $timeStart)) // 🔥 lọc theo thời gian
             ->groupBy('user_id')
             ->pluck('avg_score', 'user_id');
 
@@ -157,6 +169,7 @@ class ClassroomController extends Controller
         // History::whereHas('test.classrooms', fn($q) => $q->where('class_rooms.id', $classroom->id)) : Tìm lịch sử làm bài thuộc về bài kiểm tra trong lớp hiện tại.
         // ->pluck('user_id')->unique() : Lấy tất cả các 'user_id' từ các bản ghi lịch sử và loại bỏ các giá trị trùng lặp để có danh sách các học viên duy nhất đã làm bài.
         $completedUserIds = History::whereHas('test.classrooms', fn($q) => $q->where('class_rooms.id', $classroom->id))
+            ->when($timeStart, fn($q) => $q->where('created_at', '>=', $timeStart))
             ->pluck('user_id')->unique();
 
         $done = $completedUserIds->count(); // Số lượng học viên đã hoàn thành.
@@ -166,7 +179,10 @@ class ClassroomController extends Controller
 
         // TRUY VẤN: Tính điểm trung bình của tất cả các bài kiểm tra trong lớp
         // History::whereHas('test.classrooms', fn($q) => $q->where('class_rooms.id', $classroom->id))->avg('score') : Tính điểm trung bình của tất cả các lịch sử làm bài thuộc về bài kiểm tra trong lớp hiện tại.
-        $avgScoreAll = History::whereHas('test.classrooms', fn($q) => $q->where('class_rooms.id', $classroom->id))->avg('score');
+        $avgScoreAll = History::whereHas('test.classrooms', fn($q) => $q
+        ->where('class_rooms.id', $classroom->id))
+        ->when($timeStart, fn($q) => $q->where('created_at', '>=', $timeStart)) // 🔥 lọc theo thời gian
+        ->avg('score');
         $completedCount = $done; // Đã định nghĩa ở trên, có thể trùng lặp.
 
         // Tính toán xếp loại cho từng thành viên
@@ -208,6 +224,7 @@ class ClassroomController extends Controller
             $histories = History::with(['test', 'user'])
                 ->where('test_id', $selectedTestId)
                 ->whereIn('user_id', $classroom->members->pluck('id'))
+                ->when($timeStart, fn($q) => $q->where('created_at', '>=', $timeStart))
                 ->get()
                 ->groupBy('user_id');
         }
@@ -226,7 +243,9 @@ class ClassroomController extends Controller
             'avgScoreAll',
             'completedCount',
             'ratings',
-            'selectedTestId'
+            'selectedTestId',
+            'timeStart',
+            'members'
         ));
     }
 

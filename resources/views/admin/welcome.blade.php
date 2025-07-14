@@ -27,10 +27,12 @@
     <div id="app">
 
     </div>
-    <script src="/assets/vendor/jquery/jquery.min.js"></script>
+    {{-- <script src="/assets/vendor/jquery/jquery.min.js"></script> --}}
     <script src="/assets/vendor/jquery-easing/jquery.easing.min.js"></script>
-    <script src="/assets/js/sb-admin-2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    {{-- <script src="/assets/js/sb-admin-2.min.js"></script> --}}
+    {{-- <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script> --}}
+    <!-- ❌ Thiếu dòng này -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

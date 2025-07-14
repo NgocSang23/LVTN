@@ -3,8 +3,11 @@
 use App\AI\Ochat;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AiSuggestionController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\ClassroomTestController;
 use App\Http\Controllers\DifficultCardController;
+use App\Http\Controllers\FlashcardAssignmentController;
 use App\Http\Controllers\FlashcardDefineEssayController;
 use App\Http\Controllers\FlashcardGameController;
 use App\Http\Controllers\FlashcardMultipleChoiceController;
@@ -16,6 +19,16 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
+// ========== ADMIN ROUTES ==========
+Route::prefix('admin')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
+
+Route::middleware(['auth:sanctum'])->get('/api/me', function (Request $request) {
+    return $request->user();
+});
 
 // ========== GUEST ROUTES ==========
 Route::middleware('guest')->group(function () {
@@ -150,6 +163,9 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::post('/classrooms/{id}/notify-incomplete', [ClassroomController::class, 'notifyIncompleteStudents'])
         ->name('classrooms.notifyIncomplete')
         ->middleware('can:teacher');
+
+    Route::post('/classroom-tests/assign', [ClassroomTestController::class, 'assign'])->name('classroom_tests.assign');
+    Route::post('/tests/assign', [ClassroomTestController::class, 'assign'])->name('teacher.assignTest');
 
     // AI Suggestion
     Route::post('/ai/suggest-topic', [AiSuggestionController::class, 'suggest']);

@@ -187,7 +187,7 @@
             async function fetchTests() {
                 try {
                     // Gọi API để lấy danh sách câu hỏi
-                    let response = await fetch(`http://127.0.0.1:8000/api/card_multiple_choice/${testId}`);
+                    let response = await fetch(`http://localhost:8000/api/card_multiple_choice/${testId}`);
                     let data = await response.json();
                     let tests = data.data;
 

@@ -265,7 +265,7 @@
 
             // Hàm fetch câu hỏi từ API
             function fetchQuestions() {
-                fetch(`http://127.0.0.1:8000/api/card_define_essay/${cardId}`)
+                fetch(`http://localhost:8000/api/card_define_essay/${cardId}`)
                     .then(response => response.json())
                     .then(data => {
                         // Kiểm tra nếu API trả về dữ liệu thành công
@@ -693,13 +693,13 @@
                 let imagePath = document.querySelector(".image_path");
 
                 if (image) {
-                    imagePath.src = `http://127.0.0.1:8000/storage/${encodeURIComponent(image)}`;
+                    imagePath.src = `http://localhost:8000/storage/${encodeURIComponent(image)}`;
                     imagePath.classList.remove("d-none");
                     imagePath.onerror = function() {
                         imagePath.classList.add("d-none");
                     };
 
-                    imagePathInput.value = `http://127.0.0.1:8000/storage/${encodeURIComponent(image)}`;
+                    imagePathInput.value = `http://localhost:8000/storage/${encodeURIComponent(image)}`;
                     imagePreview.src = imagePathInput.value;
                     imagePreview.classList.remove("d-none");
                 } else {

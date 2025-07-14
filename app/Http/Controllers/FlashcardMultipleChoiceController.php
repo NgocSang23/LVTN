@@ -78,6 +78,22 @@ class FlashcardMultipleChoiceController extends Controller
             'user_id' => auth()->id()
         ]);
 
+        if ($request->has('classroom_ids')) {
+            foreach ($request->classroom_ids as $classroomId) {
+                DB::table('classroom_tests')->updateOrInsert(
+                    [
+                        'classroom_id' => $classroomId,
+                        'test_id' => $test->id,
+                    ],
+                    [
+                        'deadline' => null, // có thể dùng $request->input('deadline') nếu có gửi từ form
+                        'updated_at' => now(),
+                        'created_at' => now(), // optional – sẽ không thay đổi nếu đã tồn tại
+                    ]
+                );
+            }
+        }
+
         // ✅ Gắn bài kiểm tra vào các lớp học nếu có
         if (!empty($data['classroom_ids'])) {
             $test->classrooms()->syncWithoutDetaching($data['classroom_ids']);

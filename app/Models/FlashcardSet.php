@@ -71,9 +71,4 @@ class FlashcardSet extends Model
             }
         });
     }
-
-    public function assignments()
-    {
-        return $this->belongsToMany(Assignment::class, 'assignments', 'flashcard_set_id', 'assignment_id')->withTimestamps();
-    }
 }

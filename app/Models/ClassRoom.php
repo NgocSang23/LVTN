@@ -74,9 +74,4 @@ class ClassRoom extends Model
     {
         return $this->belongsToMany(Test::class, 'classroom_tests', 'classroom_id', 'test_id')->withTimestamps();
     }
-
-    public function assignments()
-    {
-        return $this->belongsToMany(Assignment::class, 'assignments', 'classroom_id', 'assignment_id')->withTimestamps();
-    }
 }

@@ -1,154 +1,259 @@
 <template>
-    <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 shadow">
-      <!-- Sidebar Toggle (Topbar) -->
-      <button
-        id="sidebarToggleTop"
-        class="btn btn-secondary d-md-none rounded-circle me-3"
-      >
-        <i class="fa fa-bars"></i>
-      </button>
-
-      <!-- Topbar Search -->
-      <form
-        @submit.prevent="submitSearch"
-        class="d-none d-sm-inline-block form-inline ms-3 my-2 my-md-0 mw-100 navbar-search position-relative"
-      >
-        <div class="input-group">
-          <input
-            v-model="search"
-            type="text"
-            class="form-control bg-light border-0 small"
-            placeholder="Tìm kiếm người dùng, flashcard, thống kê..."
-          />
-          <div class="input-group-append">
-            <button class="btn btn-secondary" type="submit">
-              <i class="fas fa-search fa-sm"></i>
-            </button>
-          </div>
-        </div>
-        <div
-          id="search-suggestions"
-          class="position-absolute bg-white shadow p-2 rounded w-100"
-          style="z-index: 9999"
-          v-show="showSuggestions"
-        >
-          <div v-for="suggestion in suggestions" :key="suggestion.id">
-            <a href="#" class="d-block py-1">{{ suggestion.text }}</a>
-          </div>
-        </div>
-      </form>
-
-      <!-- Topbar Navbar -->
-      <ul class="navbar-nav ms-auto align-items-center">
-        <!-- Thống kê nhanh -->
-        <li class="nav-item mx-2">
-          <a class="nav-link" href="/admin/statistics">
-            <i class="fa-solid fa-chart-line text-secondary"></i>
-          </a>
-        </li>
-
-        <!-- Thông báo -->
-        <li class="nav-item dropdown no-arrow mx-2">
-          <a
-            class="nav-link dropdown-toggle position-relative"
-            href="#"
-            data-bs-toggle="dropdown"
-          >
-            <i class="fa-solid fa-bell text-warning"></i>
-            <span
-              class="position-absolute start-100 translate-middle badge rounded-pill bg-danger"
-              style="font-size: 0.6rem"
-              >3</span
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow mb-4">
+        <div class="container-fluid">
+            <!-- Sidebar Toggle Button (for mobile) -->
+            <button
+                class="btn btn-outline-secondary d-lg-none me-3"
+                @click="$emit('toggle-sidebar')"
             >
-          </a>
-          <div class="dropdown-menu dropdown-menu-end shadow">
-            <h6 class="dropdown-header">Thông báo</h6>
-            <a class="dropdown-item" href="#">
-              <i class="fa-solid fa-wrench me-2 text-muted"></i> Bảo trì hệ thống lúc 22h
-            </a>
-            <a class="dropdown-item" href="#">
-              <i class="fa-solid fa-star me-2 text-muted"></i> Tính năng mới được cập nhật
-            </a>
-          </div>
-        </li>
+                <i class="fas fa-bars"></i>
+            </button>
 
-        <!-- User -->
-        <li class="nav-item dropdown no-arrow">
-          <template v-if="isLoggedIn">
-            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-              <span class="me-2 d-none d-lg-inline text-gray-600 small">{{ user.name }}</span>
-              <img
-                class="img-profile rounded-circle"
-                :src="user.image || defaultImage"
-                width="32"
-                height="32"
-              />
-            </a>
-            <div class="dropdown-menu dropdown-menu-end shadow">
-              <a class="dropdown-item" href="/profile">
-                <i class="fas fa-user fa-sm fa-fw me-2 text-gray-400"></i>
-                Thông tin cá nhân
-              </a>
-              <a class="dropdown-item" href="/admin/settings">
-                <i class="fa-solid fa-cog fa-sm fa-fw me-2 text-gray-400"></i>
-                Cài đặt quản trị
-              </a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="/logout">
-                <i class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-gray-400"></i>
-                Đăng xuất
-              </a>
-            </div>
-          </template>
-          <template v-else>
-            <a class="nav-link text-primary fw-bold" href="/login">
-              <i class="fas fa-sign-in-alt fa-sm fa-fw me-2 text-primary"></i>
-              Đăng nhập
-            </a>
-          </template>
-        </li>
-      </ul>
+            <!-- Search Form -->
+            <form
+                class="d-none d-md-flex align-items-center w-50 position-relative"
+                @submit.prevent="submitSearch"
+            >
+                <input
+                    v-model="search"
+                    class="form-control form-control-sm w-100"
+                    type="search"
+                    placeholder="Tìm kiếm người dùng, flashcard, thống kê..."
+                />
+                <button
+                    class="btn btn-sm btn-secondary position-absolute end-0"
+                    type="submit"
+                >
+                    <i class="fas fa-search"></i>
+                </button>
+                <div
+                    v-if="showSuggestions"
+                    class="position-absolute bg-white border shadow rounded mt-1 w-100 z-3"
+                >
+                    <a
+                        v-for="suggestion in suggestions"
+                        :key="suggestion.id"
+                        href="#"
+                        class="dropdown-item"
+                    >
+                        {{ suggestion.text }}
+                    </a>
+                </div>
+            </form>
+
+            <!-- Right Nav Section -->
+            <ul class="navbar-nav ms-auto align-items-center">
+                <!-- Quick stats -->
+                <li class="nav-item mx-2">
+                    <router-link class="nav-link" to="/admin/statistics">
+                        <i class="fa-solid fa-chart-line text-secondary"></i>
+                    </router-link>
+                </li>
+
+                <!-- Notifications -->
+                <li class="nav-item dropdown mx-2">
+                    <a
+                        class="nav-link dropdown-toggle position-relative"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                    >
+                        <i class="fa-solid fa-bell text-warning"></i>
+                        <span
+                            class="badge bg-danger position-absolute top-10 start-100 translate-middle rounded-pill"
+                            style="font-size: 0.6rem"
+                        >
+                            3
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">Thông báo</h6></li>
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i
+                                    class="fa-solid fa-wrench me-2 text-muted"
+                                ></i>
+                                Bảo trì hệ thống lúc 22h
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fa-solid fa-star me-2 text-muted"></i>
+                                Tính năng mới được cập nhật
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- User Profile -->
+                <li class="nav-item dropdown">
+                    <a
+                        v-if="isLoggedIn"
+                        class="nav-link dropdown-toggle"
+                        href="#"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                    >
+                        <span
+                            class="me-2 d-none d-lg-inline text-gray-600 small"
+                            >{{ user.email }}</span
+                        >
+                        <img
+                            class="rounded-circle"
+                            :src="user.image || defaultImage"
+                            width="32"
+                            height="32"
+                            alt="profile"
+                        />
+                    </a>
+                    <ul
+                        v-if="isLoggedIn"
+                        class="dropdown-menu dropdown-menu-end"
+                    >
+                        <li>
+                            <router-link class="dropdown-item" to="/profile">
+                                <i
+                                    class="fas fa-user fa-sm fa-fw me-2 text-gray-400"
+                                ></i>
+                                Thông tin cá nhân
+                            </router-link>
+                        </li>
+                        <li>
+                            <router-link
+                                class="dropdown-item"
+                                to="/admin/settings"
+                            >
+                                <i
+                                    class="fa-solid fa-cog fa-sm fa-fw me-2 text-gray-400"
+                                ></i>
+                                Cài đặt quản trị
+                            </router-link>
+                        </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="#"
+                                @click.prevent="logout"
+                            >
+                                <i
+                                    class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-gray-400"
+                                ></i>
+                                Đăng xuất
+                            </a>
+                        </li>
+                    </ul>
+                    <a
+                        v-else
+                        class="nav-link text-primary fw-bold"
+                        href="#"
+                        @click.prevent="login"
+                    >
+                        <i
+                            class="fas fa-sign-in-alt fa-sm fa-fw me-2 text-primary"
+                        ></i>
+                        Đăng nhập
+                    </a>
+                </li>
+            </ul>
+        </div>
     </nav>
-  </template>
+</template>
 
-  <script>
-  export default {
-    name: "AdminHeader",
+<script>
+// Import đối tượng Dropdown từ Bootstrap (để sử dụng API JavaScript cho dropdown Bootstrap 5)
+import { Dropdown } from "bootstrap";
+
+export default {
+    name: "AdminHeader", // Đặt tên cho component là AdminHeader
+
     data() {
-      return {
-        search: "",
-        suggestions: [],
-        showSuggestions: false,
-        user: {
-          name: "Admin",
-          image: "", // link ảnh từ API nếu có
-        },
-        defaultImage: "/assets/img/undraw_profile.svg",
-        isLoggedIn: true, // true giả định, kết nối với auth thực tế
-      };
+        return {
+            search: "", // Chuỗi tìm kiếm được nhập vào ô tìm kiếm
+            suggestions: [], // Mảng chứa danh sách gợi ý (ví dụ: người dùng, flashcard...)
+            showSuggestions: false, // Cờ để điều khiển hiển thị/ẩn khung gợi ý
+            user: {
+                email: "", // Email của admin đăng nhập
+                image: "", // Ảnh đại diện của admin
+            },
+            defaultImage: "/assets/img/undraw_profile.svg", // Ảnh mặc định nếu không có ảnh user
+            isLoggedIn: false, // Biến kiểm tra trạng thái đăng nhập của admin
+        };
     },
-    methods: {
-      submitSearch() {
-        this.$router.push({
-          name: "search",
-          query: { search: this.search },
-        });
-      },
-    },
-  };
-  </script>
 
-  <style scoped>
-  #search-suggestions {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-top: none;
-  }
-  #search-suggestions a:hover {
-    background-color: #f8f9fa;
-  }
-  .img-profile {
-    object-fit: cover;
-  }
-  </style>
+    created() {
+        // Hàm này được gọi khi component được khởi tạo (chưa gắn vào DOM)
+
+        const saved = localStorage.getItem("admin"); // Lấy thông tin admin từ localStorage (nếu có)
+        if (saved) {
+            try {
+                const admin = JSON.parse(saved); // Parse JSON thành đối tượng JavaScript
+                // Gán thông tin user từ dữ liệu lưu
+                this.user = {
+                    email: admin.email || "admin@example.com", // Nếu không có email thì dùng mặc định
+                    image: admin.image || "", // Nếu không có ảnh thì để trống
+                };
+                this.isLoggedIn = true; // Đánh dấu đã đăng nhập
+            } catch (e) {
+                console.error("Lỗi khi đọc thông tin admin", e); // Ghi log nếu lỗi khi parse JSON
+            }
+        }
+    },
+
+    methods: {
+        // Hàm xử lý khi người dùng nhấn tìm kiếm
+        submitSearch() {
+            // Chuyển hướng đến route "search" và truyền query tìm kiếm
+            this.$router.push({
+                name: "search",
+                query: { search: this.search },
+            });
+        },
+
+        // Hàm xử lý khi người dùng nhấn đăng xuất
+        logout() {
+            axios
+                .post("admin/logout", {}, { withCredentials: true }) // Gửi yêu cầu POST đăng xuất
+                .then(() => {
+                    // Xoá thông tin đăng nhập khỏi localStorage
+                    localStorage.removeItem("admin");
+                    localStorage.removeItem("admin_logged_in");
+                    this.$router.push("/admin/login"); // Chuyển về trang đăng nhập
+                })
+                .catch((err) => {
+                    console.error("Đăng xuất thất bại:", err); // Ghi log nếu có lỗi
+                });
+        },
+
+        // Hàm xử lý khi người dùng nhấn "Đăng nhập"
+        login() {
+            this.$router.push("/admin/login"); // Chuyển hướng về trang đăng nhập
+        },
+    },
+
+    mounted() {
+        // Hàm này chạy khi component đã được gắn vào DOM
+
+        // Tìm tất cả các phần tử có thuộc tính data-bs-toggle="dropdown"
+        const dropdownTriggerList = document.querySelectorAll(
+            '[data-bs-toggle="dropdown"]'
+        );
+
+        // Với mỗi phần tử đó, khởi tạo dropdown bằng Bootstrap
+        // Điều này đảm bảo dropdown hoạt động đúng trong môi trường Vue (không cần jQuery)
+        dropdownTriggerList.forEach((dropdownTriggerEl) => {
+            new Dropdown(dropdownTriggerEl); // Tạo dropdown Bootstrap bằng JS
+        });
+    },
+};
+</script>
+
+<style scoped>
+.z-3 {
+    z-index: 1050;
+}
+
+.dropdown-toggle::after {
+    display: none !important;
+}
+</style>

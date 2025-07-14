@@ -75,7 +75,7 @@
             @endphp
             <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <i class="fas fa-bell fa-fw"></i>
+                <i class="fas fa-bell fa-fw" style="color: rgb(220, 220, 34);"></i>
                 @if ($unread > 0)
                     <span class="badge badge-danger badge-counter">{{ $unread }}</span>
                 @endif

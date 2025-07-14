@@ -56,19 +56,21 @@
                     </div>
                     @if (auth()->user()->roles === 'teacher' && count($myClassrooms) > 0)
                         <div class="mb-4">
-                            <label for="classroom_id" class="form-label fw-semibold">Chia sẻ ngay vào lớp học (tuỳ
-                                chọn):</label>
-                            <select class="form-select" name="classroom_ids[]" id="classroom_id" style="border-radius: 8px;">
-                                <option value="">-- Không chia sẻ --</option>
+                            <label class="form-label fw-semibold">📚 Chia sẻ ngay vào lớp học (tùy chọn):</label>
+                            <div class="row g-2" style="max-height: 150px; overflow-y: auto;">
                                 @foreach ($myClassrooms as $classroom)
-                                    <option value="{{ $classroom->id }}">{{ $classroom->name }} ({{ $classroom->code }})
-                                    </option>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="classroom_ids[]"
+                                                value="{{ $classroom->id }}" id="create_classroom_{{ $classroom->id }}">
+                                            <label class="form-check-label" for="create_classroom_{{ $classroom->id }}">
+                                                {{ $classroom->name }} ({{ $classroom->code }})
+                                            </label>
+                                        </div>
+                                    </div>
                                 @endforeach
-                            </select>
-                            <div class="form-text">Bạn có thể chia sẻ bài kiểm tra này trực tiếp với một lớp học.</div>
-                            @error('classroom_id')
-                                <small class="text-danger">{{ $message }}</small>
-                            @enderror
+                            </div>
+                            <div class="form-text">Chia sẻ bài kiểm tra này đến các lớp học bạn chọn.</div>
                         </div>
                     @endif
                 </div>
