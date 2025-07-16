@@ -180,9 +180,9 @@ class ClassroomController extends Controller
         // TRUY VẤN: Tính điểm trung bình của tất cả các bài kiểm tra trong lớp
         // History::whereHas('test.classrooms', fn($q) => $q->where('class_rooms.id', $classroom->id))->avg('score') : Tính điểm trung bình của tất cả các lịch sử làm bài thuộc về bài kiểm tra trong lớp hiện tại.
         $avgScoreAll = History::whereHas('test.classrooms', fn($q) => $q
-        ->where('class_rooms.id', $classroom->id))
-        ->when($timeStart, fn($q) => $q->where('created_at', '>=', $timeStart)) // 🔥 lọc theo thời gian
-        ->avg('score');
+            ->where('class_rooms.id', $classroom->id))
+            ->when($timeStart, fn($q) => $q->where('created_at', '>=', $timeStart)) // 🔥 lọc theo thời gian
+            ->avg('score');
         $completedCount = $done; // Đã định nghĩa ở trên, có thể trùng lặp.
 
         // Tính toán xếp loại cho từng thành viên
@@ -267,6 +267,13 @@ class ClassroomController extends Controller
         // $classroom->users()->detach(auth()->id()) : Sử dụng quan hệ many-to-many 'users' của lớp học để xóa bản ghi liên kết giữa lớp học này và người dùng đang đăng nhập khỏi bảng trung gian `classroom_users`.
         $classroom->users()->detach(auth()->id());
         // Chuyển hướng về trang lớp học của tôi với thông báo thành công.
+
+        // Tạo thông báo cho học viên đã rời lớp
+        Notification::create([
+            'user_id' => auth()->id(), // ID của học viên hiện tại
+            'title' => 'Bạn đã rời khỏi lớp học',
+            'message' => "Bạn đã rời khỏi lớp học {$classroom->name}.",
+        ]);
         return redirect()->route('classrooms.my')->with('success', 'Bạn đã rời lớp học thành công!');
     }
 
@@ -326,22 +333,14 @@ class ClassroomController extends Controller
      */
     public function joinByCode(Request $request)
     {
-        // Validate dữ liệu: đảm bảo 'code' là bắt buộc.
         $request->validate(['code' => 'required']);
 
-        // TRUY VẤN: Tìm lớp học dựa trên mã
-        // Classroom::where('code', $request->code)->first() : Tìm lớp học đầu tiên có 'code' trùng với mã được gửi trong request.
         $classroom = Classroom::where('code', $request->code)->first();
 
-        // Nếu không có lớp học tương ứng
         if (!$classroom) {
             return back()->withErrors(['code' => 'Mã lớp không tồn tại.']);
         }
 
-        // TRUY VẤN: Kiểm tra xem người dùng đã tham gia lớp này chưa
-        // ClassroomUser::where('classroom_id', $classroom->id) : Tìm bản ghi trong bảng trung gian `classroom_users` theo ID lớp học.
-        // ->where('user_id', auth()->id()) : Lọc tiếp theo ID của người dùng đang đăng nhập.
-        // ->exists() : Kiểm tra xem có bản ghi nào tồn tại với các điều kiện trên không. Trả về true nếu có, false nếu không.
         $alreadyJoined = ClassroomUser::where('classroom_id', $classroom->id)
             ->where('user_id', auth()->id())
             ->exists();
@@ -350,31 +349,32 @@ class ClassroomController extends Controller
             return back()->with('info', 'Bạn đã tham gia lớp này rồi.');
         }
 
-        // Nếu chưa thì thêm vào bảng classroom_users
-        // TRUY VẤN: Tạo bản ghi mới trong bảng trung gian `classroom_users`
-        // ClassroomUser::create([...]) : Tạo một bản ghi mới, liên kết người dùng hiện tại với lớp học.
         ClassroomUser::create([
             'classroom_id' => $classroom->id,
             'user_id' => auth()->id(),
         ]);
 
-        // Gửi thông báo cho giáo viên khi học sinh tham gia
-        $user = auth()->user(); // Học viên vừa tham gia.
-        // $teacher = $classroom->creator ?? $classroom->user; // Tùy thuộc vào tên quan hệ bạn đặt trong model Classroom (creator hoặc user).
-        $teacher = $classroom->creator; // Giả sử quan hệ đến giáo viên được đặt là 'creator' trong Model Classroom
+        $user = auth()->user();
+        $teacher = $classroom->teacher; // ← dùng đúng quan hệ đã sửa
 
-        // Nếu có giáo viên và giáo viên không phải là chính học viên vừa tham gia
+        // Tạo thông báo cho giáo viên nếu khác học viên
         if ($teacher && $teacher->id !== $user->id) {
-            // TRUY VẤN: Tạo thông báo tùy chỉnh cho giáo viên
-            // $teacher->customNotifications()->create([...]) : Sử dụng quan hệ `customNotifications` của giáo viên để tạo thông báo mới.
-            $teacher->customNotifications()->create([
+
+            // Thông báo cho giáo viên
+            Notification::create([
+                'user_id' => $teacher->id,
                 'title' => '📥 Học viên mới',
                 'message' => $user->name . ' đã tham gia lớp "' . $classroom->name . '"',
-                'url' => route('classrooms.show', $classroom->id),
+            ]);
+
+            // Thông báo cho học viên
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => '🎉 Tham gia lớp học',
+                'message' => 'Bạn đã tham gia lớp "' . $classroom->name . '" thành công.',
             ]);
         }
 
-        // Chuyển hướng về trang lớp học của tôi với thông báo thành công.
         return redirect()->route('classrooms.my')->with('success', 'Tham gia lớp học thành công!');
     }
 
@@ -422,7 +422,7 @@ class ClassroomController extends Controller
         foreach ($incompleteStudents as $student) {
             // TRUY VẤN: Tạo thông báo cho từng học viên chưa làm bài
             // $student->customNotifications()->create([...]) : Sử dụng quan hệ `customNotifications` của học viên để tạo thông báo mới.
-            $student->customNotifications()->create([
+            $student->notifications()->create([
                 'title' => '📌 Nhắc nhở làm bài kiểm tra',
                 'message' => 'Bạn chưa hoàn thành bài kiểm tra trong lớp "' . $classroom->name . '". Vui lòng làm bài sớm nhé!',
                 'url' => route('classrooms.show', $classroom->id),

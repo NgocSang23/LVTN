@@ -6,14 +6,14 @@ use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request; // ✅ Đúng
+use Illuminate\Http\Request;
 
 Route::get('card_define_essay/{id}', [ApiController::class, 'card_define_essay'])->name('api.card_define');
 Route::get('card_multiple_choice/{id}', [ApiController::class, 'card_multiple_choice'])->name('api.card_multiple_choice');
 
 Route::middleware('auth:sanctum')->get('/notifications/latest', function (Request $request) {
     $user = $request->user();
-    $notifications = $user->customNotifications()->orderByDesc('created_at')->take(5)->get();
+    $notifications = $user->notifications()->orderByDesc('created_at')->take(5)->get();
     $unread = $notifications->where('is_read', false)->count();
     $html = view('partials.notification_dropdown', compact('notifications'))->render();
     return response()->json(['html' => $html, 'unread' => $unread]);
@@ -41,4 +41,24 @@ Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function
     Route::get('/notifications', [NotificationController::class, 'index']);               // Danh sách thông báo
     Route::post('/notifications', [NotificationController::class, 'store']);              // Gửi thông báo
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);     // Xoá thông báo
+    Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
+});
+
+Route::middleware('auth:sanctum')->get('/notifications/latest', function () {
+    /** @var \App\Models\User $user */
+    $user = auth()->user();
+
+    // 🔧 Đổi từ notifications() sang customNotifications()
+    $notifications = $user->notifications()->latest()->take(5)->get();
+
+    $dropdownHtml = view('partials.notification_dropdown_items', compact('notifications'))->render();
+    $fullHtml = view('partials.notification_card_list', compact('notifications'))->render();
+
+    $unread = $notifications->where('is_read', false)->count();
+
+    return response()->json([
+        'html' => $dropdownHtml,
+        'full_html' => $fullHtml,
+        'unread' => $unread,
+    ]);
 });

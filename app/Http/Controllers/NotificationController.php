@@ -20,7 +20,7 @@ class NotificationController extends Controller
          /** @var \App\Models\User $user */
          $user = auth()->user();
 
-        $user->customNotifications()->delete();
+        $user->notifications()->delete();
 
         return back()->with('success', 'Đã xoá tất cả thông báo.');
     }

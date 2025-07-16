@@ -60,27 +60,45 @@
                     >
                         <i class="fa-solid fa-bell text-warning"></i>
                         <span
+                            v-if="notifications.length"
                             class="badge bg-danger position-absolute top-10 start-100 translate-middle rounded-pill"
                             style="font-size: 0.6rem"
                         >
-                            3
+                            {{ notifications.length }}
                         </span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><h6 class="dropdown-header">Thông báo</h6></li>
                         <li>
-                            <a class="dropdown-item" href="#">
+                            <h6 class="dropdown-header">Thông báo từ Admin</h6>
+                        </li>
+
+                        <li v-for="notify in notifications" :key="notify.id">
+                            <a class="dropdown-item text-wrap" href="#">
                                 <i
-                                    class="fa-solid fa-wrench me-2 text-muted"
+                                    class="fa-regular fa-circle-dot me-2 text-muted"
                                 ></i>
-                                Bảo trì hệ thống lúc 22h
+                                <strong>{{ notify.title }}</strong>
+                                <div class="small text-muted">
+                                    {{ notify.message }}
+                                </div>
                             </a>
                         </li>
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                <i class="fa-solid fa-star me-2 text-muted"></i>
-                                Tính năng mới được cập nhật
-                            </a>
+
+                        <li
+                            v-if="!notifications.length"
+                            class="dropdown-item text-muted text-center"
+                        >
+                            Không có thông báo nào.
+                        </li>
+
+                        <li v-if="notifications.length > 0">
+                            <hr class="dropdown-divider" />
+                            <button
+                                class="dropdown-item text-danger text-center"
+                                @click="deleteAllNotifications"
+                            >
+                                🗑 Xoá tất cả thông báo
+                            </button>
                         </li>
                     </ul>
                 </li>
@@ -178,6 +196,7 @@ export default {
             },
             defaultImage: "/assets/img/undraw_profile.svg", // Ảnh mặc định nếu không có ảnh user
             isLoggedIn: false, // Biến kiểm tra trạng thái đăng nhập của admin
+            notifications: [],
         };
     },
 
@@ -208,6 +227,32 @@ export default {
                 name: "search",
                 query: { search: this.search },
             });
+        },
+
+        async loadNotifications() {
+            const token = localStorage.getItem("admin_token");
+            try {
+                const res = await axios.get("/api/admin/notifications", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                this.notifications = res.data.slice(0, 3); // lấy 3 cái mới nhất
+            } catch (err) {
+                console.error("Lỗi khi lấy thông báo admin:", err);
+            }
+        },
+
+        async deleteAllNotifications() {
+            const token = localStorage.getItem("admin_token");
+            try {
+                await axios.delete("/api/admin/notifications", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                this.notifications = [];
+            } catch (err) {
+                console.error("❌ Lỗi khi xoá tất cả thông báo:", err);
+            }
         },
 
         // Hàm xử lý khi người dùng nhấn đăng xuất
@@ -244,6 +289,8 @@ export default {
         dropdownTriggerList.forEach((dropdownTriggerEl) => {
             new Dropdown(dropdownTriggerEl); // Tạo dropdown Bootstrap bằng JS
         });
+
+        this.loadNotifications();
     },
 };
 </script>

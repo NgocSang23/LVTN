@@ -134,9 +134,9 @@ class User extends Authenticatable
         return $this->belongsToMany(ClassRoom::class, 'classroom_users', 'user_id', 'classroom_id')->withTimestamps();
     }
 
-    public function customNotifications()
+    public function notifications()
     {
-        return $this->hasMany(Notification::class);
+        return $this->hasMany(Notification::class, 'user_id');
     }
 
     public function getRoleAttribute()

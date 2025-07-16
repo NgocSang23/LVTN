@@ -50,7 +50,7 @@
             <i class="fa-solid fa-bell"></i>
             <span>Thông báo</span>
             @php
-                $unread = auth()->user()?->customNotifications()->where('is_read', false)->count();
+                $unread = auth()->user()?->notifications()->where('is_read', false)->count();
             @endphp
             @if ($unread)
                 <span class="badge bg-danger ms-1">{{ $unread }}</span>

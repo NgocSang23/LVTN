@@ -26,30 +26,6 @@
         }
     </style>
 
-    {{-- Success Message --}}
-    @if (Session::has('success'))
-        <div class="alert alert-success position-fixed top-0 start-50 translate-middle-x mt-3 shadow js-div-dissappear d-flex align-items-center text-start"
-            style="max-width: 420px; min-width: 300px; z-index: 1050;">
-            <i class="fas fa-check-circle me-2 fs-5 text-success"></i>
-            <div class="flex-grow-1">
-                {{ Session::get('success') }}
-            </div>
-            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" aria-label="Đóng"></button>
-        </div>
-    @endif
-
-    {{-- Error Message --}}
-    @if (Session::has('error'))
-        <div class="alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3 shadow js-div-dissappear d-flex align-items-center text-start"
-            style="max-width: 420px; min-width: 300px; z-index: 1050;">
-            <i class="fas fa-exclamation-circle me-2 fs-5 text-danger"></i>
-            <div class="flex-grow-1">
-                {{ Session::get('error') }}
-            </div>
-            <button type="button" class="btn-close ms-3" data-bs-dismiss="alert" aria-label="Đóng"></button>
-        </div>
-    @endif
-
     <div class="container">
         <!-- Các khái niệm và định nghĩa -->
         <div class="mb-4">
