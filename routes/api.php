@@ -8,7 +8,7 @@ use App\Http\Controllers\ApiController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-Route::get('card_define_essay/{id}', [ApiController::class, 'card_define_essay'])->name('api.card_define');
+Route::get('card_define_essay/{encodedIds}', [ApiController::class, 'card_define_essay'])->name('api.card_define');
 Route::get('card_multiple_choice/{id}', [ApiController::class, 'card_multiple_choice'])->name('api.card_multiple_choice');
 
 Route::middleware('auth:sanctum')->get('/notifications/latest', function (Request $request) {

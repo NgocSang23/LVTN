@@ -21,16 +21,6 @@ use Illuminate\Support\Str;
 
 class FlashcardMultipleChoiceController extends Controller
 {
-    public function index()
-    {
-        $tests = Test::with(['questionnumbers.topic', 'user'])
-            ->where('user_id', Auth::guard('web')->user()->id)
-            ->latest()
-            ->take(6)
-            ->get();
-        return view('user.library.multiple', compact('tests'));
-    }
-
     public function create(Request $request)
     {
         $subjects = Subject::all();

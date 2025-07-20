@@ -136,7 +136,7 @@ class FlashcardGameController extends Controller
         ]);
     }
 
-    public function check($ids, Request $request)
+    public function fillBlanks($ids, Request $request)
     {
         $decodedIds = base64_decode($ids);
         if (!$decodedIds) {
@@ -144,18 +144,10 @@ class FlashcardGameController extends Controller
         }
 
         $idsArray = explode(',', $decodedIds);
-
-        $selectedTypes = $request->input('selectedTypes');
-        if (is_null($selectedTypes)) {
-            $selectedTypes = ['mcq', 'true_false', 'essay'];
-        } elseif (is_string($selectedTypes)) {
-            $selectedTypes = explode(',', $selectedTypes);
-        }
-
         $questionLimit = (int) $request->input('limit', 10);
 
         $cards = Card::whereIn('id', $idsArray)
-            ->with(['question.topic', 'question.answers'])
+            ->with(['question.answers'])
             ->inRandomOrder()
             ->get();
 
@@ -167,65 +159,41 @@ class FlashcardGameController extends Controller
 
             if (!$question || !$answers || $answers->isEmpty()) continue;
 
-            $type = 'essay';
-            if ($answers->count() >= 3) {
-                $type = 'mcq';
-            } elseif ($answers->count() === 1) {
-                $type = 'true_false';
+            $answerText = trim($answers->first()->content);
+
+            if (stripos($answerText, ' là ') !== false) {
+                [$subject, $rest] = explode(' là ', $answerText, 2);
+                $questionWithBlank = "___ là " . $rest;
+                $displayQuestion = ucfirst($subject) . " là gì?";
+
+                $quizData->push([
+                    'question' => $questionWithBlank,
+                    'type' => 'fill_blank',
+                    'correct_answer_text' => $subject,
+                    'display_question' => $displayQuestion,
+                ]);
+                continue;
             }
 
-            if (!in_array($type, $selectedTypes)) continue;
+            $words = preg_split('/\s+/', $answerText);
+            if (count($words) < 3) continue;
 
-            if ($type === 'mcq') {
-                $correctAnswer = $answers->first();
-                $wrongAnswers = Answer::whereHas('question', function ($q) use ($question) {
-                    $q->where('topic_id', $question->topic_id)
-                        ->where('id', '!=', $question->id);
-                })->inRandomOrder()->limit(3)->get();
+            $indexToBlank = rand(0, count($words) - 1);
+            $correctAnswer = $words[$indexToBlank];
+            $words[$indexToBlank] = '___';
+            $questionWithBlank = implode(' ', $words);
 
-                if ($wrongAnswers->count() < 3) continue;
-
-                $answersToShow = collect([$correctAnswer])->merge($wrongAnswers)->shuffle();
-
-                $quizData->push([
-                    'question' => $question->content,
-                    'type' => 'mcq',
-                    'correct_answer_id' => $correctAnswer->id,
-                    'answers' => $answersToShow->map(fn($ans) => [
-                        'id' => $ans->id,
-                        'content' => $ans->content
-                    ])->values()
-                ]);
-            } elseif ($type === 'true_false') {
-                $realAnswer = $answers->first();
-                $randomWrong = Answer::where('id', '!=', $realAnswer->id)->inRandomOrder()->first();
-
-                if (!$randomWrong) continue;
-
-                $mixed = collect([$realAnswer, $randomWrong])->shuffle();
-
-                $quizData->push([
-                    'question' => $question->content,
-                    'type' => 'true_false',
-                    'correct_answer_id' => $realAnswer->id,
-                    'answers' => $mixed->map(fn($ans) => [
-                        'id' => $ans->id,
-                        'content' => $ans->content
-                    ])->values()
-                ]);
-            } elseif ($type === 'essay') {
-                $quizData->push([
-                    'question' => $question->content,
-                    'type' => 'essay',
-                    'correct_answer_id' => $answers->first()->id,
-                    'answers' => []
-                ]);
-            }
+            $quizData->push([
+                'question' => $questionWithBlank,
+                'type' => 'fill_blank',
+                'correct_answer_text' => $correctAnswer,
+                'display_question' => 'Điền vào chỗ trống:',
+            ]);
         }
 
         $finalQuiz = $quizData->shuffle()->take($questionLimit)->values();
 
-        return view('user.flashcard_game.check', [
+        return view('user.flashcard_game.fill_blank', [
             'quizData' => $finalQuiz,
             'idsArray' => $idsArray,
             'questionCount' => $finalQuiz->count()

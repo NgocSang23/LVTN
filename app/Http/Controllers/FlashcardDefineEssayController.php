@@ -25,41 +25,6 @@ use OpenAI;
 
 class FlashcardDefineEssayController extends Controller
 {
-    public function index()
-    {
-        $card_defines = Card::with(['question.topic.subject', 'user'])
-            ->where('user_id', Auth::guard('web')->user()->id)
-            ->whereHas('question', function ($query) {
-                $query->where('type', 'definition');
-            })
-            ->latest()
-            ->get()
-            ->filter(fn($card) => $card->question && $card->question->topic)
-            ->groupBy(fn($card) => $card->question->topic->id)
-            ->map(fn($group) => [
-                'first_card' => $group->first(), // Card đầu tiên hiển thị
-                'card_ids' => $group->pluck('id')->implode(','), // ID của tất cả cards cùng chủ đề
-            ])
-            ->take(6);
-
-        $card_essays = Card::with(['question.topic.subject', 'user'])
-            ->where('user_id', Auth::guard('web')->user()->id)
-            ->whereHas('question', function ($query) {
-                $query->where('type', 'essay');
-            })
-            ->latest()
-            ->get()
-            ->filter(fn($card) => $card->question && $card->question->topic)
-            ->groupBy(fn($card) => $card->question->topic->id)
-            ->map(fn($group) => [
-                'first_card' => $group->first(),
-                'card_ids' => $group->pluck('id')->implode(','),
-            ])
-            ->take(6);
-
-        return view('user.library.define_essay', compact('card_defines', 'card_essays'));
-    }
-
     public function create()
     {
         $subjects = Subject::all();
@@ -249,11 +214,23 @@ class FlashcardDefineEssayController extends Controller
         }
     }
 
-    public function show(string $id)
+    public function show(string $encodedIds)
     {
-        // Lấy topic_id của card đang chọn
+        // Giải mã danh sách ID
+        $decoded = base64_decode($encodedIds);
+        $cardIds = explode(',', $decoded);
+
+        // dd($encodedIds, $decoded, $cardIds);
+
+        if (empty($cardIds) || !is_array($cardIds)) {
+            abort(404, 'Danh sách thẻ không hợp lệ.');
+        }
+
+        // Lấy topic_id của card đầu tiên
+        $firstCardId = $cardIds[0];
+
         $topicId = DB::table('questions')
-            ->where('card_id', $id)
+            ->where('card_id', $firstCardId)
             ->value('topic_id');
 
         if (!$topicId) {
@@ -266,10 +243,11 @@ class FlashcardDefineEssayController extends Controller
             ->join('users', 'cards.user_id', '=', 'users.id')
             ->join('topics', 'questions.topic_id', '=', 'topics.id')
             ->select('cards.*', 'questions.*')
-            ->where('questions.topic_id', $topicId) // Lọc theo topic_id
+            ->where('questions.topic_id', $topicId)
             ->get();
 
-        $question = Question::find($id);
+        // Câu hỏi đầu tiên để hiển thị
+        $question = Question::where('card_id', $firstCardId)->first();
         if (!$question) {
             abort(404, 'Câu hỏi không tồn tại.');
         }

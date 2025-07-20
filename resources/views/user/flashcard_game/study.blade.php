@@ -120,9 +120,9 @@
                         <li><a href="{{ route('game.study', ['ids' => $encodedIds]) }}"
                                 class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"><i
                                     class="fas fa-file-alt text-primary"></i> Học tập</a></li>
-                        <li><a href="{{ route('game.check', ['ids' => $encodedIds]) }}"
+                        <li><a href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}"
                                 class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"><i
-                                    class="fas fa-file-alt text-primary"></i> Kiểm tra</a></li>
+                                    class="fas fa-file-alt text-primary"></i> Điền chỗ trống</a></li>
                         <li>
                             <hr class="dropdown-divider dropdown-divider-study">
                         </li>

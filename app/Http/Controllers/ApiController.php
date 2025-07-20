@@ -8,7 +8,8 @@ use App\Models\Test;
 
 class ApiController extends Controller
 {
-    public function apiStatus($data, $status_code, $total = 0, $message = null) {
+    public function apiStatus($data, $status_code, $total = 0, $message = null)
+    {
         return response()->json([
             'data' => $data,
             'status_code' => $status_code,
@@ -17,31 +18,33 @@ class ApiController extends Controller
         ]);
     }
 
-    public function card_define_essay($id) {
-        // Tìm card theo ID, nếu không có thì trả về lỗi 404
-        $card = Card::with(['question.topic', 'question.answers', 'question.images', 'user'])->findOrFail($id);
+    public function card_define_essay($encodedIds)
+    {
+        // Giải mã base64
+        $decoded = base64_decode($encodedIds);
+        $cardIds = explode(',', $decoded);
 
-        // Lấy tất cả các card có cùng topic_id
-        $relatedCards = Card::with(['question.topic', 'question.answers', 'question.images', 'user'])
-            ->whereHas('question.topic', function ($query) use ($card) {
-                $query->where('id', $card->question->topic->id);
-            })
+        if (empty($cardIds)) {
+            return $this->apiStatus([], 404, 0, 'Không có ID hợp lệ');
+        }
+
+        // Lấy danh sách cards theo các ID đã giải mã
+        $cards = Card::with(['question.topic', 'question.answers', 'question.images', 'user'])
+            ->whereIn('id', $cardIds)
             ->get();
 
-        if ($relatedCards) {
-            return $this->apiStatus($relatedCards, 200, 1, 'ok');
-        }
-        return $this->apiStatus(null, 404, 0, 'Data not found.');
+        return $this->apiStatus($cards, 200, count($cards), 'OK');
     }
 
-    public function card_multiple_choice($id) {
+    public function card_multiple_choice($id)
+    {
         $test = Test::with([
             'user',
             'questionnumbers.topic',
             'multiplequestions.testresults.option',
         ])->findOrFail($id);
 
-        if($test) {
+        if ($test) {
             return $this->apiStatus($test, 200, 1, 'ok');
         }
 

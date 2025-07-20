@@ -58,8 +58,7 @@
                     cặp</a>
                 <a href="{{ route('game.study', ['ids' => $encodedIds]) }}" class="btn btn-outline-primary px-4 py-2">📚 Học
                     tập</a>
-                <a href="{{ route('game.check', ['ids' => $encodedIds]) }}" class="btn btn-outline-danger px-4 py-2">📝 Kiểm
-                    tra</a>
+                <a href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}" class="btn btn-outline-danger px-4 py-2">📝 Điền chỗ trống</a>
             </div>
 
             {{-- Khu vực Flashcard --}}

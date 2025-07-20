@@ -149,8 +149,8 @@
                     </li>
                     <li>
                         <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
-                            href="{{ route('game.check', ['ids' => $encodedIds]) }}">
-                            <i class="fas fa-layer-group text-primary"></i> Kiểm tra
+                            href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-layer-group text-primary"></i> Điền chỗ trống
                         </a>
                     </li>
                     <li>

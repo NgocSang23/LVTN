@@ -8,6 +8,15 @@
         </div>
 
         <div v-else>
+            <div class="mb-3 w-50">
+                <input
+                    v-model="searchQuery"
+                    type="text"
+                    class="form-control"
+                    placeholder="🔍 Tìm kiếm theo tên hoặc email..."
+                />
+            </div>
+
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
@@ -140,6 +149,7 @@ export default {
             selectedUser: null, // Biến lưu trữ thông tin người dùng được chọn để gán quyền (khi modal hiển thị)
             assignMessage: "", // Biến lưu trữ nội dung thông báo (thành công/thất bại) cho Toast
             assignSuccess: true, // Biến cờ cho biết thông báo là thành công (true) hay thất bại (false), dùng để thay đổi màu Toast
+            searchQuery: "", // Biến lưu trữ truy vấn tìm kiếm người dùng
         };
     },
     computed: {
@@ -148,9 +158,18 @@ export default {
             return Math.ceil(this.users.length / this.perPage);
         },
         // Computed property này trả về danh sách người dùng cho trang hiện tại
+        filteredUsers() {
+            if (!this.searchQuery) return this.users;
+            const q = this.searchQuery.toLowerCase();
+            return this.users.filter(
+                (user) =>
+                    user.name.toLowerCase().includes(q) ||
+                    user.email.toLowerCase().includes(q)
+            );
+        },
         paginatedUsers() {
-            const start = (this.currentPage - 1) * this.perPage; // Tính toán chỉ số bắt đầu của mảng
-            return this.users.slice(start, start + this.perPage); // Cắt mảng users để lấy dữ liệu cho trang hiện tại
+            const start = (this.currentPage - 1) * this.perPage;
+            return this.filteredUsers.slice(start, start + this.perPage);
         },
     },
     methods: {

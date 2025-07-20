@@ -9,43 +9,52 @@
 
     <hr class="sidebar-divider my-0">
 
-    <li class="nav-item active">
+    <li class="nav-item {{ request()->routeIs('user.dashboard') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('user.dashboard') }}">
             <i class="fa-solid fa-house"></i>
-            <span>Trang chủ</span></a>
+            <span>Trang chủ</span>
+        </a>
     </li>
-    <li class="nav-item active">
-        <a class="nav-link" href="{{ route('user.library_define_essay') }}">
+
+    <li class="nav-item {{ request()->routeIs('user.library') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('user.library') }}">
             <i class="fa-solid fa-book"></i>
-            <span>Thư viện của bạn</span></a>
+            <span>Thư viện của bạn</span>
+        </a>
     </li>
-    <li class="nav-item active">
+
+    <li
+        class="nav-item {{ request()->routeIs('user.history_define_essay') || request()->routeIs('user.history_multiple_choice') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('user.history_define_essay') }}">
             <i class="fa-solid fa-clock-rotate-left"></i>
-            <span>Kết quả học tập</span></a>
+            <span>Kết quả học tập</span>
+        </a>
     </li>
+
     @can('teacher')
-        <li class="nav-item active">
+        <li class="nav-item {{ request()->routeIs('classrooms.index') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('classrooms.index') }}">
                 <i class="fas fa-chalkboard-teacher"></i> <span>Lớp học của tôi</span>
             </a>
         </li>
     @endcan
+
     @can('student')
-        <li class="nav-item active">
+        <li class="nav-item {{ request()->routeIs('classrooms.joinForm') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('classrooms.joinForm') }}">
                 <i class="fa-solid fa-user-plus"></i>
                 <span>Tham gia lớp học</span>
             </a>
         </li>
-        <li class="nav-item active">
+        <li class="nav-item {{ request()->routeIs('classrooms.my') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('classrooms.my') }}">
                 <i class="fas fa-users"></i>
                 <span>Lớp học của tôi</span>
             </a>
         </li>
     @endcan
-    <li class="nav-item {{ request()->is('user/notifications*') }} active">
+
+    <li class="nav-item {{ request()->routeIs('user.notifications') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('user.notifications') }}">
             <i class="fa-solid fa-bell"></i>
             <span>Thông báo</span>
@@ -64,14 +73,15 @@
         Bắt đầu tại đây
     </div>
 
-    <li class="nav-item active">
+    <li class="nav-item {{ request()->routeIs('flashcard_define_essay.create') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('flashcard_define_essay.create') }}">
             <i class="fas fa-fw fa-cog"></i>
             <span>Khái niệm / Tự luận</span>
         </a>
     </li>
+
     @can('teacher')
-        <li class="nav-item active">
+        <li class="nav-item {{ request()->routeIs('flashcard_multiple_choice.create') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('flashcard_multiple_choice.create') }}">
                 <i class="fas fa-fw fa-cog"></i>
                 <span>Trắc nghiệm</span>
@@ -79,12 +89,13 @@
         </li>
     @endcan
 
-    <li class="nav-item active">
+    <li class="nav-item">
         <a class="nav-link" href="#">
             <i class="fas fa-fw fa-wrench"></i>
             <span>Lời giải chuyên gia</span>
         </a>
     </li>
+
     <div class="text-center d-none d-md-inline">
         <button class="rounded-circle border-0" id="sidebarToggle"></button>
     </div>

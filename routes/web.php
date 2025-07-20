@@ -89,7 +89,7 @@ Route::middleware('auth')->prefix('user')->group(function () {
         Route::get('game_flashcard/{ids}', [FlashcardGameController::class, 'flashcard'])->name('game.flashcard');
         Route::get('game_match/{ids}', [FlashcardGameController::class, 'match'])->name('game.match');
         Route::get('game_study/{ids}', [FlashcardGameController::class, 'study'])->name('game.study');
-        Route::get('game_check/{ids}', [FlashcardGameController::class, 'check'])->name('game.check');
+        Route::get('game_fill_blanks/{ids}', [FlashcardGameController::class, 'fillBlanks'])->name('game.fill_blank');
     });
 
     // Save user answers
@@ -98,8 +98,7 @@ Route::middleware('auth')->prefix('user')->group(function () {
 
     // Library
     Route::prefix('library')->group(function () {
-        Route::get('/define_essay', [FlashcardDefineEssayController::class, 'index'])->name('user.library_define_essay');
-        Route::get('/multiple', [FlashcardMultipleChoiceController::class, 'index'])->name('user.library_multiple');
+            Route::get('/', [UserController::class, 'library'])->name('user.library');
     });
 
     // History

@@ -32,6 +32,13 @@
             <h2 class="h4 mb-4">📘 Khái niệm / định nghĩa</h2>
             <div class="row g-4 position-relative" style="z-index: 1;">
                 @forelse ($card_defines as $card_define)
+                    @php
+                        $cardIdsArray = is_array($card_define['card_ids'])
+                            ? $card_define['card_ids']
+                            : explode(',', $card_define['card_ids']);
+                        $encodedIds = base64_encode(implode(',', $cardIdsArray));
+                    @endphp
+
                     <div class="col-12 col-sm-6 col-lg-4">
                         <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d position-relative"
                             style="overflow: visible; z-index: 10;">
@@ -46,55 +53,49 @@
                                     {{-- Chia sẻ --}}
                                     <li class="dropdown-header text-muted">Chia sẻ</li>
 
-                                    {{-- Sao chép liên kết --}}
                                     <li>
-                                        <a class="dropdown-item" href="#"
-                                            onclick="copyToClipboard('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                        <a class="dropdown-item w-100 text-start" href="#"
+                                            onclick="copyToClipboard('{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}')">
                                             📋 Sao chép liên kết
                                         </a>
                                     </li>
 
-                                    {{-- Mã QR --}}
                                     <li>
-                                        <a class="dropdown-item" href="#"
-                                            onclick="showQrModal('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                        <a class="dropdown-item w-100 text-start" href="#"
+                                            onclick="showQrModal('{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}')">
                                             🌐 Tạo mã QR
                                         </a>
                                     </li>
 
-                                    {{-- Facebook --}}
                                     <li>
-                                        <a class="dropdown-item" href="#"
-                                            onclick="shareFacebook('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                        <a class="dropdown-item w-100 text-start" href="#"
+                                            onclick="shareFacebook('{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}')">
                                             📤 Chia sẻ Facebook
                                         </a>
                                     </li>
 
-                                    {{-- Zalo --}}
                                     <li>
-                                        <a class="dropdown-item" href="#"
-                                            onclick="shareZalo('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">
+                                        <a class="dropdown-item w-100 text-start" href="#"
+                                            onclick="shareZalo('{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}')">
                                             💬 Chia sẻ Zalo
                                         </a>
                                     </li>
 
                                     @if (empty($card_define['first_card']->flashcardSet?->slug))
-                                        {{-- Nếu chưa có FlashcardSet, hiển thị nút tạo --}}
                                         <li>
                                             <form method="POST" action="{{ route('flashcard.share.create') }}">
                                                 @csrf
-                                                @foreach (explode(',', $card_define['card_ids']) as $id)
+                                                @foreach ($cardIdsArray as $id)
                                                     <input type="hidden" name="card_ids[]" value="{{ $id }}">
                                                 @endforeach
-                                                <button type="submit" class="dropdown-item text-primary">
+                                                <button type="submit" class="dropdown-item text-primary w-100 text-start">
                                                     🌍 Chia sẻ công khai
                                                 </button>
                                             </form>
                                         </li>
                                     @else
-                                        {{-- Nếu đã có, hiển thị nút xem --}}
                                         <li>
-                                            <a class="dropdown-item text-success"
+                                            <a class="dropdown-item text-success w-100 text-start"
                                                 href="{{ route('flashcard.share', ['slug' => $card_define['first_card']->flashcardSet->slug]) }}">
                                                 🔗 Xem chia sẻ công khai
                                             </a>
@@ -104,21 +105,21 @@
                             </div>
 
                             <!-- Nội dung thẻ -->
-                            <a href="{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}"
+                            <a href="{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}"
                                 class="text-decoration-none text-dark">
                                 <div class="d-flex align-items-center">
-                                    <img src="./assets/img/card_define.jpg" alt="Icon"
+                                    <img src="{{ asset('assets/img/card_define.jpg') }}" alt="Icon"
                                         class="rounded-circle bg-primary p-1" width="50" height="50"
                                         style="object-fit: cover;">
                                     <div class="ms-3">
                                         <h5 class="mb-1 fw-semibold text-truncate">
                                             {{ optional($card_define['first_card']->question->topic)->title ?? 'Không có chủ đề' }}
                                         </h5>
-                                        <small class="text-muted d-block">
-                                            Số thẻ: {{ count(explode(',', $card_define['card_ids'])) }} |
-                                            Tác giả: {{ $card_define['first_card']->user->name ?? 'Ẩn danh' }}
-                                        </small>
-                                        <small class="text-muted">Ngày tạo:
+                                        <small class="text-muted d-block">📄 Số thẻ:
+                                            {{ count($cardIdsArray) }}</small>
+                                        <small class="text-muted d-block">👤 Tác giả:
+                                            {{ $card_define['first_card']->user->name ?? 'Ẩn danh' }}</small>
+                                        <small class="text-muted d-block">📅 Ngày tạo:
                                             {{ $card_define['first_card']->created_at->format('Y-m-d') }}</small>
                                     </div>
                                 </div>
@@ -130,40 +131,6 @@
                 @endforelse
             </div>
         </div>
-
-        {{-- <!-- Câu hỏi tự luận -->
-        <div class="mb-4">
-            <h2 class="h4 mb-4">📝 Câu hỏi tự luận</h2>
-            <div class="row g-4">
-                @forelse ($card_essays as $card_essay)
-                    <div class="col-12 col-sm-6 col-lg-4">
-                        <a href="{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_essay['card_ids'])]) }}"
-                            class="text-decoration-none text-dark">
-                            <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d">
-                                <div class="d-flex align-items-center">
-                                    <img src="./assets/img/card_essay.jpg" alt="Icon"
-                                        class="rounded-circle bg-primary p-1" width="50" height="50"
-                                        style="object-fit: cover;">
-                                    <div class="ms-3">
-                                        <h5 class="mb-1 fw-semibold text-truncate">
-                                            {{ optional($card_essay['first_card']->question->topic)->title ?? 'Không có chủ đề' }}
-                                        </h5>
-                                        <small class="text-muted d-block">
-                                            Số thẻ: {{ count(explode(',', $card_essay['card_ids'])) }} |
-                                            Tác giả: {{ $card_essay['first_card']->user->name ?? 'Ẩn danh' }}
-                                        </small>
-                                        <small class="text-muted">Ngày tạo:
-                                            {{ $card_essay['first_card']->created_at->format('Y-m-d') }}</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    </div>
-                @empty
-                    <p class="text-muted">Chưa có thẻ nào được tạo.</p>
-                @endforelse
-            </div>
-        </div> --}}
 
         <!-- Bài kiểm tra -->
         <div class="mb-4">

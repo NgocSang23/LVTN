@@ -26,6 +26,7 @@ class UserController extends Controller
             ->map(fn($group) => [
                 'first_card' => $group->first(), // Card đầu tiên hiển thị
                 'card_ids' => $group->pluck('id')->implode(','), // ID của tất cả cards cùng chủ đề
+                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')), // 👈 thêm dòng này
             ])
             ->take(6);
 
@@ -40,6 +41,7 @@ class UserController extends Controller
             ->map(fn($group) => [
                 'first_card' => $group->first(),
                 'card_ids' => $group->pluck('id')->implode(','),
+                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')), // 👈 thêm dòng này
             ])
             ->take(6);
 
@@ -51,6 +53,54 @@ class UserController extends Controller
         }
 
         return view('user.dashboard', compact('card_defines', 'card_essays', 'tests', 'myClassrooms'));
+    }
+
+    public function library(Request $request)
+    {
+        $tab = $request->get('tab', 'define_essay');
+
+        $card_defines = collect();
+        $card_essays = collect();
+        $tests = collect();
+        $myClassrooms = collect();
+
+        if ($tab === 'define_essay') {
+            $card_defines = Card::with(['question.topic.subject', 'user'])
+                ->where('user_id', Auth::id())
+                ->whereHas('question', fn($q) => $q->where('type', 'definition'))
+                ->latest()->get()
+                ->filter(fn($card) => $card->question && $card->question->topic)
+                ->groupBy(fn($card) => $card->question->topic->id)
+                ->map(fn($group) => [
+                    'first_card' => $group->first(),
+                    'card_ids' => $group->pluck('id')->implode(','),
+                ])->take(6);
+
+            $card_essays = Card::with(['question.topic.subject', 'user'])
+                ->where('user_id', Auth::id())
+                ->whereHas('question', fn($q) => $q->where('type', 'essay'))
+                ->latest()->get()
+                ->filter(fn($card) => $card->question && $card->question->topic)
+                ->groupBy(fn($card) => $card->question->topic->id)
+                ->map(fn($group) => [
+                    'first_card' => $group->first(),
+                    'card_ids' => $group->pluck('id')->implode(','),
+                ])->take(6);
+        }
+
+        if ($tab === 'multiple') {
+            $tests = Test::with(['questionnumbers.topic', 'user'])
+                ->where('user_id', Auth::id())
+                ->latest()
+                ->take(6)
+                ->get();
+
+            if (auth()->user()->roles === 'teacher') {
+                $myClassrooms = ClassRoom::where('teacher_id', Auth::id())->get();
+            }
+        }
+
+        return view('user.library.index', compact('tab', 'card_defines', 'card_essays', 'tests', 'myClassrooms'));
     }
 
     public function logout(Request $request)

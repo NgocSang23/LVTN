@@ -34,6 +34,15 @@
 
         <!-- Danh sách -->
         <div v-else>
+            <div class="mb-3 w-50">
+                <input
+                    v-model="searchQuery"
+                    type="text"
+                    class="form-control"
+                    placeholder="🔍 Tìm kiếm theo tên hoặc email..."
+                />
+            </div>
+
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
@@ -183,6 +192,7 @@ export default {
             toastSuccess: true, // Cờ hiệu xác định loại thông báo Toast (true: thành công - màu xanh, false: thất bại - màu đỏ).
             selectedCard: null, // Lưu trữ flashcard đang được chọn để thực hiện hành động (ví dụ: xóa).
             filterStatus: "pending", // Trạng thái lọc flashcard hiện tại: 'pending' (chờ duyệt) hoặc 'approved' (đã duyệt).
+            searchQuery: "", // Truy vấn tìm kiếm.
         };
     },
 
@@ -194,12 +204,19 @@ export default {
             // Math.ceil() đảm bảo rằng chúng ta luôn có đủ trang, kể cả khi có flashcard lẻ.
             return Math.ceil(this.flashcards.length / this.perPage);
         },
+        filteredFlashcards() {
+            if (!this.searchQuery) return this.flashcards;
+            const q = this.searchQuery.toLowerCase();
+            return this.flashcards.filter(
+                (card) =>
+                    card.title.toLowerCase().includes(q) ||
+                    card.description.toLowerCase().includes(q) ||
+                    (card.author && card.author.toLowerCase().includes(q))
+            );
+        },
         paginatedFlashcards() {
-            // Tính toán danh sách flashcard sẽ được hiển thị trên trang hiện tại.
-            // `start` là chỉ số bắt đầu của mảng `flashcards` cho trang hiện tại.
             const start = (this.currentPage - 1) * this.perPage;
-            // `slice()` được sử dụng để lấy một phần của mảng `flashcards` từ `start` đến `start + perPage`.
-            return this.flashcards.slice(start, start + this.perPage);
+            return this.filteredFlashcards.slice(start, start + this.perPage);
         },
     },
 
