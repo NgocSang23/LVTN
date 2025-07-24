@@ -8,6 +8,7 @@ use App\Models\AnswerUser;
 use App\Models\Card;
 use App\Models\ClassRoom;
 use App\Models\ClassroomFlashcard;
+use App\Models\DifficultCard;
 use App\Models\FlashcardSet;
 use App\Models\Image;
 use App\Models\Question;
@@ -326,19 +327,20 @@ class FlashcardDefineEssayController extends Controller
         if (!$question) {
             return redirect()->back()->with('error', 'Không tìm thấy câu hỏi!');
         }
+
         $card_id = $question->card_id;
+
+        // XÓA liên quan trước
+        DifficultCard::where('question_id', $question->id)->delete();
 
         $question->images()->delete();
         $question->answers()->delete();
 
-        $answerUser = AnswerUser::where('question_id', $question->id)->first();
-        if ($answerUser) {
-            $answerUser->delete();
-        }
+        AnswerUser::where('question_id', $question->id)->delete();
 
         $question->delete();
 
-        // Kiểm tra nếu thẻ không còn câu hỏi nào, thì xóa luôn thẻ
+        // Nếu card không còn câu hỏi nào, thì xóa luôn
         $remainingQuestions = Question::where('card_id', $card_id)->count();
         if ($remainingQuestions == 0) {
             Card::where('id', $card_id)->delete();

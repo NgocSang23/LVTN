@@ -137,22 +137,33 @@
                     @endphp
                     <li>
                         <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
-                            href="{{ route('game.match', ['ids' => $encodedIds]) }}">
-                            <i class="fas fa-sync-alt text-primary"></i> Tìm cặp
+                            href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-clone text-primary"></i> Flashcard
                         </a>
                     </li>
                     <li>
                         <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
-                            href="{{ route('game.study', ['ids' => $encodedIds]) }}">
-                            <i class="fas fa-file-alt text-primary"></i> Học tập
+                            href="{{ route('game.match', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-sync-alt text-primary"></i> Tìm cặp
                         </a>
                     </li>
+                    @if (isset($idsArray) && count($idsArray) > 3)
+                        <li>
+                            <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
+                                href="{{ route('game.study', ['ids' => $encodedIds]) }}">
+                                <i class="fas fa-file-alt text-primary"></i> Học tập
+                            </a>
+                        </li>
+                    @endif
                     <li>
                         <a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
                             href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}">
                             <i class="fas fa-layer-group text-primary"></i> Điền chỗ trống
                         </a>
                     </li>
+                    <li><a class="dropdown-item dropdown-item-match d-flex align-items-center gap-2"
+                            href="{{ route('game.essay', ['ids' => $encodedIds]) }}"><i
+                                class="fas fa-edit text-primary"></i> Tự luận</a></li>
                     <li>
                         <hr class="dropdown-divider-match">
                     </li>
@@ -168,7 +179,7 @@
                 Tải lại trò chơi
             </button>
         </div>
-        <h2 class="fw-bold text-secondary">Tìm cặp</h2>
+        <h2 class="fw-bold text-dark text-center mb-4">Tìm cặp</h2>
 
         {{-- PHP xử lý dữ liệu từ controller --}}
         @php

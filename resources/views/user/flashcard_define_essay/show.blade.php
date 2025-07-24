@@ -45,20 +45,50 @@
                 <h2 class="topic_title m-0"></h2>
             </div>
 
-            {{-- Các nút chế độ học --}}
-            <div class="d-flex justify-content-center mb-4 gap-3 mode-buttons flex-wrap">
+            {{-- Bài kiểm tra nâng cao --}}
+            <div class="container mb-4">
                 @php
                     $encodedIds = base64_encode(implode(',', $cards->pluck('id')->toArray()));
                 @endphp
 
-                <a href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}" class="btn btn-outline-warning px-4 py-2">🃏
-                    Flashcard</a>
-                {{-- <a href="{{ route('game.essay', ['ids' => $encodedIds]) }}" class="btn btn-outline-dark px-4 py-2">✏️ Tự luận</a> --}}
-                <a href="{{ route('game.match', ['ids' => $encodedIds]) }}" class="btn btn-outline-success px-4 py-2">🧩 Tìm
-                    cặp</a>
-                <a href="{{ route('game.study', ['ids' => $encodedIds]) }}" class="btn btn-outline-primary px-4 py-2">📚 Học
-                    tập</a>
-                <a href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}" class="btn btn-outline-danger px-4 py-2">📝 Điền chỗ trống</a>
+                <div class="row g-3"> {{-- BỎ justify-content-center --}}
+                    <div class="col-12 col-md-4">
+                        <a href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}"
+                            class="btn btn-outline-warning w-100 py-2">
+                            🃏 Flashcard
+                        </a>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <a href="{{ route('game.match', ['ids' => $encodedIds]) }}"
+                            class="btn btn-outline-success w-100 py-2">
+                            🧩 Tìm cặp
+                        </a>
+                    </div>
+
+                    @if ($cards->count() > 3)
+                        <div class="col-12 col-md-4">
+                            <a href="{{ route('game.study', ['ids' => $encodedIds]) }}"
+                                class="btn btn-outline-primary w-100 py-2">
+                                📚 Học tập
+                            </a>
+                        </div>
+                    @endif
+
+                    <div class="col-12 col-md-4">
+                        <a href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}"
+                            class="btn btn-outline-danger w-100 py-2">
+                            📝 Điền chỗ trống
+                        </a>
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <a href="{{ route('game.essay', ['ids' => $encodedIds]) }}"
+                            class="btn btn-outline-info w-100 py-2">
+                            ✏️ Tự luận
+                        </a>
+                    </div>
+                </div>
             </div>
 
             {{-- Khu vực Flashcard --}}
@@ -168,7 +198,8 @@
             <div class="modal-content" style="border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: none;">
                 <div class="modal-header"
                     style="background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                    <h5 class="modal-title" id="editQuestionModalLabel" style="font-weight: 600;">✏️ Chỉnh sửa câu hỏi</h5>
+                    <h5 class="modal-title" id="editQuestionModalLabel" style="font-weight: 600;">✏️ Chỉnh sửa câu hỏi
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
                         style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
                 </div>
@@ -254,108 +285,169 @@
     {{-- <script src="{{ asset('assets/js/define-essay.js') }}"></script> --}}
 
     <script>
-        // Chờ đến khi DOM tải xong mới chạy code bên trong
+        // document.addEventListener("DOMContentLoaded", function() { ... });
+        // Dòng này đảm bảo rằng toàn bộ mã JavaScript bên trong sẽ chỉ chạy khi tất cả các phần tử HTML trên trang đã được tải và phân tích cú pháp hoàn tất.
+        // Điều này ngăn chặn lỗi khi cố gắng truy cập các phần tử HTML chưa tồn tại.
         document.addEventListener("DOMContentLoaded", function() {
 
-            let currentIndex = 0; // Biến lưu chỉ số câu hỏi hiện tại
-            let questions = []; // Mảng chứa danh sách các câu hỏi từ API
+            // let currentIndex = 0;
+            // Biến này dùng để lưu trữ chỉ số của câu hỏi hiện tại đang được hiển thị trên giao diện.
+            // Bắt đầu từ 0, nghĩa là câu hỏi đầu tiên trong mảng.
+            let currentIndex = 0;
 
-            const cardId = window.location.pathname.split("/").pop(); // Lấy ID thẻ từ URL
+            // let questions = [];
+            // Mảng này sẽ lưu trữ toàn bộ danh sách các câu hỏi được lấy về từ API.
+            let questions = [];
+
+            // const cardId = window.location.pathname.split("/").pop();
+            // Dòng này dùng để lấy ID của "thẻ" (card) từ URL hiện tại.
+            // Ví dụ: nếu URL là "http://localhost:8000/flashcard/123", thì cardId sẽ là "123".
+            // - window.location.pathname: Lấy phần đường dẫn của URL (ví dụ: "/flashcard/123").
+            // - .split("/"): Chia chuỗi đường dẫn thành một mảng các chuỗi con dựa trên ký tự "/".
+            //   Ví dụ: ["", "flashcard", "123"].
+            // - .pop(): Lấy phần tử cuối cùng của mảng, tức là ID thẻ.
+            const cardId = window.location.pathname.split("/").pop();
 
             // Hàm fetch câu hỏi từ API
+            // Hàm này có nhiệm vụ gọi API để lấy danh sách các câu hỏi liên quan đến cardId.
             function fetchQuestions() {
+                // fetch(): Là một API tích hợp sẵn trong trình duyệt để gửi các yêu cầu mạng (HTTP requests).
+                // `http://localhost:8000/api/card_define_essay/${cardId}`: Đây là URL của API sẽ được gọi.
+                // ${cardId} là một template literal, cho phép nhúng giá trị của biến cardId vào chuỗi URL.
                 fetch(`http://localhost:8000/api/card_define_essay/${cardId}`)
+                    // .then(response => response.json()):
+                    // Khi nhận được phản hồi từ API, .then() đầu tiên sẽ được thực thi.
+                    // response.json() sẽ phân tích cú pháp phản hồi dưới dạng JSON và trả về một Promise khác.
                     .then(response => response.json())
+                    // .then(data => { ... }):
+                    // Khi dữ liệu JSON đã được phân tích cú pháp thành công, .then() thứ hai sẽ nhận được đối tượng data.
                     .then(data => {
-                        // Kiểm tra nếu API trả về dữ liệu thành công
+                        // Kiểm tra nếu API trả về dữ liệu thành công (status_code là 200) và có ít nhất một câu hỏi.
                         if (data.status_code === 200 && data.data.length > 0) {
-                            questions = data.data; // Lưu danh sách câu hỏi vào biến questions
-                            currentIndex = 0; // Reset chỉ số câu hỏi về câu đầu tiên
-                            updateQuestion(); // Cập nhật giao diện câu hỏi
+                            // questions = data.data.filter(item => item.question.type === "definition");
+                            // Lọc ra các câu hỏi có thuộc tính 'type' là "definition".
+                            // Điều này đảm bảo rằng chỉ các câu hỏi định nghĩa được hiển thị.
+                            questions = data.data.filter(item => item.question.type === "definition");
+                            currentIndex = 0; // Reset chỉ số câu hỏi về câu đầu tiên sau khi tải dữ liệu mới.
+                            updateQuestion(); // Gọi hàm để cập nhật giao diện hiển thị câu hỏi đầu tiên.
                         } else {
-                            // Nếu không có dữ liệu
+                            // Nếu không có dữ liệu hoặc API trả về lỗi
                             document.querySelector(".question_content").innerText = "Không có dữ liệu!";
-                            document.querySelector(".answer_content").innerText = "";
+                            document.querySelector(".answer_content").innerText =
+                                ""; // Xóa nội dung câu trả lời.
                         }
                     })
+                    // .catch(error => { ... }):
+                    // Bắt bất kỳ lỗi nào xảy ra trong quá trình fetch API (ví dụ: mất mạng, server không phản hồi).
                     .catch(error => {
-                        // Bắt lỗi khi gọi API
-                        console.error("Lỗi API:", error);
-                        alert("Không thể tải dữ liệu, vui lòng thử lại sau.");
+                        console.error("Lỗi API:", error); // Ghi lỗi ra console để debug.
+                        alert("Không thể tải dữ liệu, vui lòng thử lại sau."); // Thông báo cho người dùng.
                     });
             }
 
             // Lắng nghe sự kiện lật thẻ flashcard
+            // Lấy phần tử có class 'flip-card'. Đây thường là phần tử cha của cả mặt trước và mặt sau thẻ.
             let flipCard = document.querySelector('.flip-card');
+            // Kiểm tra xem phần tử flipCard có tồn tại không trước khi thêm lắng nghe sự kiện.
             if (flipCard) {
+                // Thêm sự kiện 'click' vào thẻ flashcard.
                 flipCard.addEventListener('click', function() {
-                    flipCard.classList.toggle('flipped'); // Thêm/xóa class 'flipped' để lật thẻ
+                    // flipCard.classList.toggle('flipped');
+                    // Thêm hoặc xóa class 'flipped' khỏi thẻ.
+                    // Class này thường được dùng với CSS để tạo hiệu ứng lật thẻ (ví dụ: dùng transform: rotateY()).
+                    flipCard.classList.toggle('flipped');
+
+                    // Lấy phần tử chứa nội dung mặt sau của thẻ.
                     let backCardBody = document.querySelector('.back-card-body');
                     if (backCardBody) {
-                        // Nếu thẻ bị lật, hiển thị mặt sau
+                        // Nếu thẻ bị lật (có class 'flipped'), hiển thị mặt sau.
                         if (flipCard.classList.contains('flipped')) {
-                            backCardBody.style.display = 'block';
+                            backCardBody.style.display = 'block'; // Hiển thị mặt sau.
                         } else {
-                            backCardBody.style.display = 'none'; // Nếu không, ẩn mặt sau
+                            backCardBody.style.display =
+                                'none'; // Ẩn mặt sau khi thẻ được lật về mặt trước.
                         }
-                        saveAnswer(); // Gọi hàm lưu câu trả lời
+                        saveAnswer(); // Gọi hàm lưu câu trả lời mỗi khi thẻ được lật.
                     } else {
-                        console.error("Element .back-card-body not found.");
+                        console.error(
+                            "Element .back-card-body not found."); // Báo lỗi nếu không tìm thấy phần tử.
                     }
                 });
             }
 
             // Hàm lưu câu trả lời của người dùng khi lật thẻ
+            // Hàm này gửi một yêu cầu POST đến server để ghi nhận việc người dùng đã xem một câu hỏi.
             function saveAnswer() {
+                // Kiểm tra nếu mảng câu hỏi rỗng hoặc không tồn tại thì thoát khỏi hàm.
                 if (!questions || questions.length === 0) return;
 
+                // Lấy đối tượng câu hỏi hiện tại từ mảng 'questions' dựa trên 'currentIndex'.
                 let question = questions[currentIndex].question;
 
+                // fetch("{{ route('flashcard_define_essay.save') }}", { ... });
+                // Gửi yêu cầu POST đến endpoint lưu trạng thái flashcard.
+                // {{ route('flashcard_define_essay.save') }} là một cú pháp của Blade (framework PHP Laravel)
+                // để tạo ra URL cho một route đã định nghĩa.
                 fetch("{{ route('flashcard_define_essay.save') }}", {
-                        method: "POST",
+                        method: "POST", // Phương thức HTTP là POST.
                         headers: {
+                            // "X-CSRF-TOKEN": "{{ csrf_token() }}":
+                            // Đây là một token bảo mật (Cross-Site Request Forgery) cần thiết cho các yêu cầu POST trong Laravel.
+                            // {{ csrf_token() }} cũng là cú pháp Blade để lấy token CSRF.
                             "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json" // Chỉ định kiểu nội dung của yêu cầu là JSON.
                         },
-                        body: JSON.stringify({
-                            question_id: question.id // Gửi ID câu hỏi lên server
+                        body: JSON.stringify({ // Chuyển đổi đối tượng JavaScript thành chuỗi JSON để gửi đi.
+                            question_id: question.id // Gửi ID của câu hỏi hiện tại lên server.
                         })
                     })
+                    // .then(async response => { ... });
+                    // Khi nhận được phản hồi từ server.
                     .then(async response => {
-                        if (!response.ok) {
-                            const text = await response.text();
-                            throw new Error(`Lỗi Server: ${response.status}, ${text}`);
+                        if (!response.ok) { // Nếu phản hồi không thành công (ví dụ: status 4xx hoặc 5xx).
+                            const text = await response.text(); // Đọc nội dung phản hồi dưới dạng văn bản.
+                            throw new Error(
+                                `Lỗi Server: ${response.status}, ${text}`
+                            ); // Ném lỗi với thông tin chi tiết.
                         }
-                        return response.json(); // Trả về dữ liệu JSON nếu thành công
+                        return response.json(); // Trả về dữ liệu JSON nếu thành công.
                     })
                     .then(data => {
-                        console.log("Đã lưu câu trả lời", data);
+                        console.log("Đã lưu câu trả lời", data); // Ghi thông báo thành công ra console.
                     })
                     .catch(error => {
-                        console.error("Lỗi khi lưu câu trả lời:", error);
+                        console.error("Lỗi khi lưu câu trả lời:", error); // Bắt và ghi lỗi nếu có.
                     });
             }
 
             // Hàm cập nhật giao diện câu hỏi khi next/prev hoặc load dữ liệu
+            // Hàm này chịu trách nhiệm hiển thị câu hỏi và câu trả lời hiện tại lên giao diện người dùng,
+            // cũng như cập nhật trạng thái của các nút "Khó" và "Tôi đã hiểu".
             function updateQuestion() {
+                // Nếu không có câu hỏi nào, thoát khỏi hàm.
                 if (questions.length === 0) return;
 
-                let cardData = questions[currentIndex]; // Lấy dữ liệu câu hỏi hiện tại
-                let question = cardData.question; // Lấy đối tượng câu hỏi
-                let type = question.type; // Loại câu hỏi: definition hoặc essay
-                let topic = question.topic; // Lấy thông tin chủ đề câu hỏi
+                // Lấy dữ liệu của câu hỏi hiện tại từ mảng 'questions'.
+                let cardData = questions[currentIndex];
+                let question = cardData.question; // Lấy đối tượng câu hỏi.
+                let topic = question.topic; // Lấy thông tin chủ đề.
+                // Lấy nội dung câu trả lời. Nếu không có đáp án, hiển thị "Chưa có đáp án".
                 let answer = (question.answers && question.answers.length > 0) ? question.answers[0].content :
-                    "Chưa có đáp án"; // Đáp án
+                    "Chưa có đáp án";
+                // Lấy đường dẫn ảnh. Nếu không có ảnh, đặt là null.
                 let image = (question.images && question.images.length > 0) ? question.images[0].path :
-                    null; // Đường dẫn ảnh
-                let card = document.querySelector(".card"); // Thẻ chứa nội dung
+                    null;
+
+                // Chuỗi HTML để xây dựng danh sách câu hỏi trong bảng
                 let listQuestion = "";
 
+                // Duyệt qua tất cả các câu hỏi để tạo hàng cho bảng hiển thị danh sách định nghĩa.
                 questions.forEach((cardData) => {
                     let question = cardData.question;
                     let answer = (question.answers && question.answers.length > 0) ? question.answers[0]
                         .content : "Chưa có đáp án";
 
+                    // Thêm HTML cho mỗi hàng vào chuỗi listQuestion.
                     listQuestion += `
                         <tr>
                             <td class="fw-bold">${question.content}</td>
@@ -370,56 +462,64 @@
                 // Đổ dữ liệu vào phần thân bảng
                 document.querySelector(".definition-table-body").innerHTML = listQuestion;
 
+                // Cập nhật tiêu đề chủ đề.
                 document.querySelector(".topic_title").innerText = 'Chủ đề: ' + topic.title;
 
-                if (type === "definition") {
-                    document.querySelector(".question_content").innerHTML =
-                        `<div style="max-height: 150px; overflow-y: auto;">${question.content}</div>`;
-                    document.querySelector(".answer_content").innerHTML = answer;
+                // Cập nhật nội dung câu hỏi, giới hạn chiều cao và thêm cuộn nếu cần.
+                document.querySelector(".question_content").innerHTML =
+                    `<div style="max-height: 150px; overflow-y: auto;">${question.content}</div>`;
+                // Cập nhật nội dung câu trả lời.
+                document.querySelector(".answer_content").innerHTML = answer;
 
-                    const markBtn = document.querySelector(".mark-difficult"); // Nút "Khó"
-                    const resolveContainer = document.querySelector(
+                const markBtn = document.querySelector(".mark-difficult"); // Nút "Khó"
+                const resolveContainer = document.querySelector(
                     ".resolve-container"); // Nơi hiện nút "Tôi đã hiểu"
 
-                    // Gán ID câu hỏi vào nút
-                    markBtn.dataset.questionId = question.id;
+                // Gán ID câu hỏi vào thuộc tính data-question-id của nút "Khó".
+                markBtn.dataset.questionId = question.id;
 
-                    // Reset giao diện mặc định
-                    markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`;
-                    markBtn.classList.remove("btn-success", "fw-bold", "text-success");
-                    markBtn.classList.add("text-danger");
-                    markBtn.style.pointerEvents = "auto";
-                    resolveContainer.innerHTML = "";
+                // Reset giao diện mặc định của nút "Khó"
+                markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`; // Nội dung nút.
+                // Xóa các class CSS đã thêm trước đó (nếu có).
+                markBtn.classList.remove("btn-success", "fw-bold", "text-success");
+                markBtn.classList.add("text-danger"); // Thêm class màu đỏ.
+                markBtn.style.pointerEvents = "auto"; // Cho phép click lại.
+                resolveContainer.innerHTML = ""; // Xóa nội dung của vùng chứa nút "Tôi đã hiểu".
 
-                    // Gọi API kiểm tra trạng thái
-                    fetch(`/user/api/flashcard/check-difficult/${question.id}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.is_difficult) {
-                                if (!data.is_resolved) {
-                                    // 🔸 Đã đánh dấu "Khó" nhưng chưa "Tôi đã hiểu"
-                                    markBtn.innerHTML =
-                                        `<i class="fas fa-check-circle me-1"></i> <span>Đã đánh dấu</span>`;
-                                    markBtn.style.pointerEvents = "none";
+                // Gọi API kiểm tra trạng thái của câu hỏi (đã đánh dấu khó chưa, đã giải quyết chưa).
+                fetch(`/user/api/flashcard/check-difficult/${question.id}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        // Nếu câu hỏi đã được đánh dấu là "Khó" (is_difficult là true)
+                        if (data.is_difficult) {
+                            // Nếu đã đánh dấu "Khó" nhưng chưa "Tôi đã hiểu"
+                            if (!data.is_resolved) {
+                                // Cập nhật nội dung và trạng thái của nút "Khó".
+                                markBtn.innerHTML =
+                                    `<i class="fas fa-check-circle me-1"></i> <span>Đã đánh dấu</span>`;
+                                markBtn.style.pointerEvents =
+                                    "none"; // Vô hiệu hóa nút "Khó" để không đánh dấu lại.
 
-                                    // Hiện nút "Tôi đã hiểu"
-                                    resolveContainer.innerHTML = `
-                                        <button class="btn btn-warning mark-resolved mt-2 mb-2" data-question-id="${question.id}" style="min-width: 140px;">
-                                            <i class="fas fa-check"></i> Tôi đã hiểu
-                                        </button>
-                                    `;
+                                // Hiện nút "Tôi đã hiểu"
+                                resolveContainer.innerHTML = `
+                                    <button class="btn btn-warning mark-resolved mt-2 mb-2" data-question-id="${question.id}" style="min-width: 140px;">
+                                        <i class="fas fa-check"></i> Tôi đã hiểu
+                                    </button>
+                                `;
 
-                                    // Bắt sự kiện click vào "Tôi đã hiểu"
-                                    document.querySelector(".mark-resolved").addEventListener("click",
+                                // Bắt sự kiện click vào "Tôi đã hiểu"
+                                // Khi nút "Tôi đã hiểu" được click, gửi yêu cầu POST để đánh dấu câu hỏi là đã giải quyết.
+                                document.querySelector(".mark-resolved").addEventListener("click",
                                     function() {
-                                        const qid = this.dataset.questionId;
+                                        const qid = this.dataset.questionId; // Lấy ID câu hỏi từ nút.
 
                                         fetch("/user/flashcard/resolved", {
                                                 method: "POST",
                                                 headers: {
                                                     "Content-Type": "application/json",
                                                     "X-CSRF-TOKEN": document.querySelector(
-                                                        'meta[name="csrf-token"]').content
+                                                            'meta[name="csrf-token"]')
+                                                        .content // Lấy CSRF token từ thẻ meta.
                                                 },
                                                 body: JSON.stringify({
                                                     question_id: qid
@@ -428,335 +528,222 @@
                                             .then(res => res.json())
                                             .then(result => {
                                                 if (result.status === "resolved") {
+                                                    // Nếu server trả về trạng thái "resolved", reset lại giao diện của nút "Khó".
                                                     markBtn.innerHTML =
                                                         `<i class="far fa-frown me-1"></i> Khó`;
                                                     markBtn.classList.remove("text-success");
                                                     markBtn.classList.add("text-danger");
-                                                    markBtn.style.pointerEvents = "auto";
-                                                    resolveContainer.innerHTML = "";
+                                                    markBtn.style.pointerEvents =
+                                                        "auto"; // Kích hoạt lại nút "Khó".
+                                                    resolveContainer.innerHTML =
+                                                        ""; // Ẩn nút "Tôi đã hiểu".
                                                 }
                                             });
                                     });
 
-                                } else {
-                                    // 🔸 Đã đánh dấu + đã "Tôi đã hiểu"
-                                    markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`;
-                                    markBtn.classList.remove("text-success");
-                                    markBtn.classList.add("text-danger");
-                                    markBtn.style.pointerEvents = "auto";
-
-                                    // Cho phép đánh dấu lại
-                                    markBtn.addEventListener("click", function() {
-                                        const qid = this.dataset.questionId;
-
-                                        fetch("/user/flashcard/mark-difficult", {
-                                                method: "POST",
-                                                headers: {
-                                                    "Content-Type": "application/json",
-                                                    "X-CSRF-TOKEN": document.querySelector(
-                                                        'meta[name="csrf-token"]').content
-                                                },
-                                                body: JSON.stringify({
-                                                    question_id: qid
-                                                })
-                                            })
-                                            .then(res => res.json())
-                                            .then(result => {
-                                                if (result.status === "marked") {
-                                                    markBtn.innerHTML =
-                                                        `<i class="fas fa-check-circle me-1"></i> Đã đánh dấu`;
-                                                    markBtn.style.pointerEvents = "none";
-
-                                                    // Hiện nút "Tôi đã hiểu"
-                                                    resolveContainer.innerHTML = `
-                                                        <button class="btn btn-warning mark-resolved mt-2 mb-2" data-question-id="${qid}" style="min-width: 140px;">
-                                                            <i class="fas fa-check"></i> Tôi đã hiểu
-                                                        </button>
-                                                    `;
-
-                                                    document.querySelector(".mark-resolved")
-                                                        .addEventListener("click", function() {
-                                                            fetch("/user/flashcard/resolved", {
-                                                                    method: "POST",
-                                                                    headers: {
-                                                                        "Content-Type": "application/json",
-                                                                        "X-CSRF-TOKEN": document
-                                                                            .querySelector(
-                                                                                'meta[name="csrf-token"]'
-                                                                                ).content
-                                                                    },
-                                                                    body: JSON.stringify({
-                                                                        question_id: qid
-                                                                    })
-                                                                })
-                                                                .then(res => res.json())
-                                                                .then(result => {
-                                                                    if (result.status ===
-                                                                        "resolved") {
-                                                                        markBtn.innerHTML =
-                                                                            `<i class="far fa-frown me-1"></i> Khó`;
-                                                                        markBtn.classList
-                                                                            .remove(
-                                                                                "text-success"
-                                                                                );
-                                                                        markBtn.classList
-                                                                            .add(
-                                                                                "text-danger"
-                                                                                );
-                                                                        markBtn.style
-                                                                            .pointerEvents =
-                                                                            "auto";
-                                                                        resolveContainer
-                                                                            .innerHTML = "";
-                                                                    }
-                                                                });
-                                                        });
-                                                }
-                                            });
-                                    }, {
-                                        once: true
-                                    });
-                                }
                             } else {
-                                // ❌ Chưa từng đánh dấu
+                                // 🔸 Đã đánh dấu "Khó" và đã "Tôi đã hiểu"
+                                // Trong trường hợp này, nút "Khó" sẽ được hiển thị như bình thường
+                                // và có thể click để đánh dấu lại.
                                 markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`;
                                 markBtn.classList.remove("text-success");
                                 markBtn.classList.add("text-danger");
                                 markBtn.style.pointerEvents = "auto";
-                                resolveContainer.innerHTML = "";
+
+                                // Cho phép đánh dấu lại (gắn lại sự kiện click)
+                                markBtn.addEventListener("click", function() {
+                                    const qid = this.dataset.questionId;
+
+                                    fetch("/user/flashcard/mark-difficult", {
+                                            method: "POST",
+                                            headers: {
+                                                "Content-Type": "application/json",
+                                                "X-CSRF-TOKEN": document.querySelector(
+                                                    'meta[name="csrf-token"]').content
+                                            },
+                                            body: JSON.stringify({
+                                                question_id: qid
+                                            })
+                                        })
+                                        .then(res => res.json())
+                                        .then(result => {
+                                            if (result.status === "marked") {
+                                                // Nếu server trả về trạng thái "marked", cập nhật giao diện.
+                                                markBtn.innerHTML =
+                                                    `<i class="fas fa-check-circle me-1"></i> Đã đánh dấu`;
+                                                markBtn.style.pointerEvents = "none";
+
+                                                // Hiện nút "Tôi đã hiểu" sau khi đánh dấu khó.
+                                                resolveContainer.innerHTML = `
+                                                    <button class="btn btn-warning mark-resolved mt-2 mb-2" data-question-id="${qid}" style="min-width: 140px;">
+                                                        <i class="fas fa-check"></i> Tôi đã hiểu
+                                                    </button>
+                                                `;
+
+                                                // Gắn sự kiện cho nút "Tôi đã hiểu" mới tạo.
+                                                document.querySelector(".mark-resolved")
+                                                    .addEventListener("click", function() {
+                                                        fetch("/user/flashcard/resolved", {
+                                                                method: "POST",
+                                                                headers: {
+                                                                    "Content-Type": "application/json",
+                                                                    "X-CSRF-TOKEN": document
+                                                                        .querySelector(
+                                                                            'meta[name="csrf-token"]'
+                                                                        ).content
+                                                                },
+                                                                body: JSON.stringify({
+                                                                    question_id: qid
+                                                                })
+                                                            })
+                                                            .then(res => res.json())
+                                                            .then(result => {
+                                                                if (result.status ===
+                                                                    "resolved") {
+                                                                    // Reset lại giao diện nút "Khó" sau khi đã "Tôi đã hiểu".
+                                                                    markBtn.innerHTML =
+                                                                        `<i class="far fa-frown me-1"></i> Khó`;
+                                                                    markBtn.classList
+                                                                        .remove(
+                                                                            "text-success"
+                                                                        );
+                                                                    markBtn.classList
+                                                                        .add(
+                                                                            "text-danger"
+                                                                        );
+                                                                    markBtn.style
+                                                                        .pointerEvents =
+                                                                        "auto";
+                                                                    resolveContainer
+                                                                        .innerHTML = "";
+                                                                }
+                                                            });
+                                                    });
+                                            }
+                                        });
+                                }, {
+                                    once: true // Đảm bảo sự kiện chỉ được gắn một lần để tránh lỗi.
+                                });
                             }
-                        });
-                } else if (type === "essay") {
-                    // Render form cho câu hỏi essay
-                    card.innerHTML = `
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-4">
-                                <div></div>
-                                <button class="btn btn-light border">Ôn tập</button>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center scrollbar-hidden-y">
-                                <div style="max-height: 150px; overflow-y: auto;" class="fw-bold fs-4 ms-5 question_content">${question.content}</div>
-                                <img class="img-fluid rounded shadow-sm image_path d-none" style="max-width: 40%;">
-                            </div>
-                            <hr>
-                            <meta name="csrf-token" content="{{ csrf_token() }}">
-                            <form id="answerForm">
-                                <input type="hidden" name="question_id" value="${question.id}">
-                                <div class="d-flex row">
-                                    <div class="col-9">
-                                        <input type="text" name="answeruser_content" id="userAnswer" placeholder="Nhập câu trả lời của bạn" class="form-control me-3">
-                                        <small id="error-message" class="text-danger d-none">Xin nhập câu trả lời</small>
-                                    </div>
-                                    <div class="col-3">
-                                        <button type="button" class="btn btn-primary text-white check-answer">Kiểm tra</button>
-                                    </div>
-                                </div>
-                            </form>
-                            <div class="progress mt-3 w-100" style="height: 25px; max-width: 600px;">
-                                <div id="percentBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                                    role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                    0%
-                                </div>
-                            </div>
-                            <div id="resultContainer" class="mt-2 text-center"></div>
-                        </div>
-                    `;
-
-                    // Ngăn form reload trang
-                    document.querySelector("#answerForm").addEventListener("submit", function(event) {
-                        event.preventDefault();
-                    });
-
-                    // Bắt sự kiện khi bấm nút "Kiểm tra"
-                    document.querySelector(".check-answer").addEventListener("click", function() {
-                        console.log("Bắt sự kiện khi bấm nút 'Kiểm tra'");
-                        let userAnswer = document.getElementById("userAnswer").value.trim();
-                        let questionId = document.querySelector("input[name='question_id']").value;
-                        let csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute(
-                            "content");
-                        let resultContainer = document.querySelector("#resultContainer");
-                        let percentBar = document.getElementById("percentBar");
-
-                        // Kiểm tra nếu người dùng chưa nhập câu trả lời
-                        if (!userAnswer) {
-                            document.getElementById("error-message").classList.remove("d-none");
-                            return;
                         } else {
-                            document.getElementById("error-message").classList.add("d-none");
+                            // ❌ Chưa từng đánh dấu "Khó"
+                            // Reset lại trạng thái của nút "Khó" về mặc định.
+                            markBtn.innerHTML = `<i class="far fa-frown me-1"></i> Khó`;
+                            markBtn.classList.remove("text-success");
+                            markBtn.classList.add("text-danger");
+                            markBtn.style.pointerEvents = "auto";
+                            resolveContainer.innerHTML = ""; // Đảm bảo nút "Tôi đã hiểu" không hiển thị.
                         }
-
-                        // Gửi câu trả lời người dùng lên server để AI đánh giá
-                        fetch("user/ai/check-answer", {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                    "X-CSRF-TOKEN": csrfToken
-                                },
-                                body: JSON.stringify({
-                                    question_id: questionId,
-                                    answeruser_content: userAnswer
-                                })
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                console.log("Phản hồi từ AI", data);
-                                // Xử lý phản hồi từ server AI
-                                if (!data || !data.type || !data.feedback) {
-                                    resultContainer.innerHTML =
-                                        "<p class='text-danger fw-bold text-center'>Lỗi phản hồi từ AI</p>";
-                                    return;
-                                }
-
-                                // Nếu phản hồi là JSON string, parse lại
-                                if (typeof data.feedback === "string" && isJson(data.feedback)) {
-                                    try {
-                                        data = JSON.parse(data.feedback);
-                                    } catch (error) {
-                                        console.error("Lỗi parse JSON:", error);
-                                    }
-                                }
-
-                                // Nếu là câu hỏi dạng toán
-                                if (data.type.includes("math") && data.percent !== undefined) {
-                                    let percent = Math.max(0, Math.min(100, data.percent));
-                                    percentBar.style.width = percent + "%";
-                                    percentBar.setAttribute("aria-valuenow", percent);
-                                    percentBar.textContent = percent + "%";
-                                    percentBar.classList.remove("d-none");
-
-                                    resultContainer.innerHTML =
-                                        `<p class='fw-bold text-center'>Mức độ chính xác: ${percent}%</p>`;
-                                }
-                                // Nếu là câu hỏi dạng lý thuyết
-                                else if (data.type.includes("theory") && data.category && data
-                                    .feedback) {
-                                    let categoryClass = "text-warning";
-                                    if (data.category.toLowerCase().includes("chính xác"))
-                                        categoryClass = "text-success";
-                                    if (data.category.toLowerCase().includes("sai")) categoryClass =
-                                        "text-danger";
-
-                                    resultContainer.innerHTML = `
-                                        <p class='fw-bold text-center ${categoryClass}'>Đánh giá: ${data.category}</p>
-                                        <p class='text-center'>${data.feedback}</p>
-                                    `;
-
-                                    // Ẩn progress bar
-                                    percentBar.style.width = "0%";
-                                    percentBar.setAttribute("aria-valuenow", 0);
-                                    percentBar.textContent = "0%";
-                                    percentBar.classList.add("d-none");
-                                }
-                            })
-                            .catch(error => {
-                                console.error("Lỗi:", error);
-                                resultContainer.innerHTML =
-                                    "<p class='text-danger fw-bold text-center'>Lỗi kết nối đến máy chủ</p>";
-                            });
                     });
 
-                    // Hàm kiểm tra chuỗi có phải JSON hay không
-                    function isJson(str) {
-                        try {
-                            JSON.parse(str);
-                            return true;
-                        } catch (e) {
-                            return false;
-                        }
-                    }
-                }
-
-                // Hiển thị hình ảnh khi chọn ảnh khác
+                // Hiển thị hình ảnh khi chọn ảnh khác (trong form chỉnh sửa)
+                // Lắng nghe sự kiện 'change' trên input file có ID 'editImageInput'.
                 document.getElementById('editImageInput').addEventListener('change', function(event) {
                     const fileInput = event.target;
-                    const previewImg = document.getElementById('editImagePreview');
+                    const previewImg = document.getElementById(
+                        'editImagePreview'); // Element để hiển thị ảnh xem trước.
 
+                    // Kiểm tra xem có file nào được chọn không.
                     if (fileInput.files && fileInput.files[0]) {
-                        const reader = new FileReader();
+                        const reader = new FileReader(); // Tạo đối tượng FileReader để đọc nội dung file.
 
                         reader.onload = function(e) {
-                            previewImg.src = e.target.result;
-                            previewImg.classList.remove('d-none');
+                            previewImg.src = e.target
+                                .result; // Gán data URL của ảnh vào thuộc tính src của thẻ <img>.
+                            previewImg.classList.remove('d-none'); // Hiển thị ảnh xem trước.
                         };
 
-                        reader.readAsDataURL(fileInput.files[0]);
+                        reader.readAsDataURL(fileInput.files[0]); // Đọc file dưới dạng data URL.
                     } else {
-                        previewImg.src = '';
-                        previewImg.classList.add('d-none');
+                        previewImg.src = ''; // Xóa src nếu không có file.
+                        previewImg.classList.add('d-none'); // Ẩn ảnh xem trước.
                     }
                 });
 
-                // Hiển thị ảnh nếu có
-                let imagePathInput = document.getElementById("editImagePath");
-                let imagePreview = document.getElementById("editImagePreview");
-                let imagePath = document.querySelector(".image_path");
+                // Hiển thị ảnh hiện có (nếu có) khi load câu hỏi
+                let imagePathInput = document.getElementById("editImagePath"); // Input ẩn chứa đường dẫn ảnh.
+                let imagePreview = document.getElementById("editImagePreview"); // Thẻ img để hiển thị ảnh.
+                let imagePath = document.querySelector(
+                    ".image_path"); // Thẻ img khác để hiển thị ảnh trên flashcard.
 
-                if (image) {
-                    imagePath.src = `http://localhost:8000/storage/${encodeURIComponent(image)}`;
-                    imagePath.classList.remove("d-none");
+                if (image) { // Nếu có đường dẫn ảnh từ dữ liệu câu hỏi.
+                    imagePath.src =
+                        `http://localhost:8000/storage/${encodeURIComponent(image)}`; // Đặt src cho ảnh hiển thị trên flashcard.
+                    imagePath.classList.remove("d-none"); // Hiển thị ảnh.
+                    // Xử lý lỗi nếu ảnh không tải được.
                     imagePath.onerror = function() {
-                        imagePath.classList.add("d-none");
+                        imagePath.classList.add("d-none"); // Ẩn ảnh nếu bị lỗi.
                     };
 
+                    // Cập nhật giá trị và hiển thị ảnh trong form chỉnh sửa.
                     imagePathInput.value = `http://localhost:8000/storage/${encodeURIComponent(image)}`;
                     imagePreview.src = imagePathInput.value;
                     imagePreview.classList.remove("d-none");
                 } else {
+                    // Nếu không có ảnh, ẩn tất cả các phần tử liên quan đến ảnh.
                     imagePath.classList.add("d-none");
                     imagePathInput.value = "";
                     imagePreview.classList.add("d-none");
                 }
 
-                // Cập nhật chỉ số câu hỏi
-                document.querySelector(".current-question").textContent = currentIndex + 1;
-                document.querySelector(".total-questions").textContent = questions.length;
+                // Cập nhật chỉ số câu hỏi (ví dụ: "1/10")
+                document.querySelector(".current-question").textContent = currentIndex +
+                    1; // Số câu hỏi hiện tại (bắt đầu từ 1).
+                document.querySelector(".total-questions").textContent = questions.length; // Tổng số câu hỏi.
 
-                // Cập nhật form edit & delete
+                // Cập nhật form edit & delete (URL action cho form)
+                // Cập nhật action của form chỉnh sửa câu hỏi với ID của câu hỏi hiện tại.
                 document.getElementById("editQuestionForm").action =
                     `{{ route('flashcard_define_essay.update', ':id') }}`.replace(':id', cardData.id);
+                // Cập nhật action của form xóa câu hỏi.
                 document.getElementById("deleteForm").action =
                     `{{ route('flashcard_define_essay.destroy', ':id') }}`.replace(':id', cardData.id);
 
-                // Load dữ liệu vào form sửa
+                // Load dữ liệu câu hỏi và trả lời vào các input trong form sửa.
                 const editQuestionInput = document.getElementById("editQuestionContent");
                 if (editQuestionInput) {
-                    editQuestionInput.value = question.content;
+                    editQuestionInput.value = question.content; // Đặt nội dung câu hỏi vào input.
                 }
 
                 const editAnswerInput = document.getElementById("editAnswerContent");
                 if (editAnswerInput) {
-                    editAnswerInput.value = answer;
+                    editAnswerInput.value = answer; // Đặt nội dung câu trả lời vào input.
                 }
             }
 
             // Nút lùi câu hỏi
             document.querySelector(".prev-question").addEventListener("click", function() {
+                // Nếu currentIndex lớn hơn 0, tức là vẫn còn câu hỏi phía trước.
                 if (currentIndex > 0) {
-                    currentIndex--;
-                    updateQuestion();
+                    currentIndex--; // Giảm chỉ số câu hỏi.
+                    updateQuestion(); // Cập nhật giao diện.
                 }
             });
 
             // Nút tiến câu hỏi
             document.querySelector(".next-question").addEventListener("click", function() {
+                // Nếu currentIndex nhỏ hơn tổng số câu hỏi trừ 1 (tức là chưa phải câu cuối cùng).
                 if (currentIndex < questions.length - 1) {
-                    currentIndex++;
-                    updateQuestion();
-
+                    currentIndex++; // Tăng chỉ số câu hỏi.
+                    updateQuestion(); // Cập nhật giao diện.
                 }
             });
 
             // Bắt sự kiện khi click vào số câu hỏi hiện tại để load lại câu hỏi đầu tiên
+            // (Đây là một tính năng tiện ích để người dùng có thể quay về câu hỏi đầu tiên nhanh chóng).
             document.querySelector(".current-question").addEventListener("click", function() {
-                currentIndex = 0;
-                updateQuestion();
+                currentIndex = 0; // Đặt chỉ số về 0.
+                updateQuestion(); // Cập nhật giao diện.
             });
 
-            // Bắt sự kiện khi click vào phần khó
+            // Bắt sự kiện khi click vào nút "Khó"
+            // Duyệt qua tất cả các phần tử có class "mark-difficult" (để đảm bảo gắn sự kiện cho cả nút "Khó" ở lần đầu và sau khi reset)
             document.querySelectorAll(".mark-difficult").forEach(el => {
                 el.addEventListener("click", function() {
-                    const questionId = this.dataset.questionId; // Lấy ID câu hỏi
+                    const questionId = this.dataset
+                        .questionId; // Lấy ID câu hỏi từ thuộc tính data-question-id của nút.
 
+                    // Gửi yêu cầu POST để đánh dấu câu hỏi là khó.
                     fetch("{{ route('flashcard.mark_difficult') }}", {
                             method: "POST",
                             headers: {
@@ -769,12 +756,13 @@
                         })
                         .then(res => res.json())
                         .then(data => {
-                            // ✅ Cập nhật nút "Khó"
+                            // ✅ Cập nhật giao diện nút "Khó" sau khi đánh dấu thành công
                             this.innerHTML =
-                                '<i class="fas fa-check-circle me-1"></i> Đã đánh dấu';
-                            this.classList.remove("text-danger");
-                            this.classList.add("text-success");
-                            this.style.pointerEvents = "none";
+                                '<i class="fas fa-check-circle me-1"></i> Đã đánh dấu'; // Thay đổi nội dung nút.
+                            this.classList.remove("text-danger"); // Xóa màu đỏ.
+                            this.classList.add("text-success"); // Thêm màu xanh lá cây.
+                            this.style.pointerEvents =
+                                "none"; // Vô hiệu hóa nút để tránh đánh dấu lại.
 
                             // ✅ Hiện lại nút "Tôi đã hiểu"
                             const resolveContainer = document.querySelector(
@@ -785,9 +773,10 @@
                                 </button>
                             `;
 
-                            // Gắn sự kiện cho nút "Tôi đã hiểu"
+                            // Gắn sự kiện cho nút "Tôi đã hiểu" mới được thêm vào DOM.
                             document.querySelector(".mark-resolved").addEventListener("click",
                                 function() {
+                                    // Gửi yêu cầu POST để đánh dấu câu hỏi là đã giải quyết.
                                     fetch("{{ route('flashcard.mark_resolved') }}", {
                                             method: "POST",
                                             headers: {
@@ -801,31 +790,26 @@
                                         .then(res => res.json())
                                         .then(result => {
                                             if (result.status === "resolved") {
-                                                // ✅ Reset lại giao diện "Khó"
-                                                el.innerHTML =
+                                                // ✅ Reset lại giao diện "Khó" sau khi đã "Tôi đã hiểu"
+                                                el.innerHTML = // Sử dụng 'el' vì 'this' ở đây là nút 'mark-resolved'.
                                                     '<i class="far fa-frown me-1"></i> Khó';
                                                 el.classList.remove("text-success");
                                                 el.classList.add("text-danger");
-                                                el.style.pointerEvents = "auto";
-
-                                                resolveContainer.innerHTML = '';
+                                                el.style.pointerEvents =
+                                                    "auto"; // Kích hoạt lại nút "Khó".
                                             }
                                         });
                                 });
-                        })
-                        .catch(err => {
-                            alert("Lỗi khi đánh dấu thẻ khó.");
-                            console.error(err);
                         });
                 });
             });
 
-            // Gọi API khi load trang lần đầu
+            // Gọi hàm fetchQuestions khi DOM đã tải xong
+            // Đây là điểm khởi đầu, hàm này sẽ được gọi ngay sau khi trang được tải để lấy dữ liệu câu hỏi ban đầu.
             fetchQuestions();
         });
     </script>
 @endsection
-
 
 @section('css')
     <link rel="stylesheet" href="{{ asset('assets/css/message.css') }}" />

@@ -114,6 +114,42 @@
             border-radius: 50px !important;
             padding: 0.6rem 1.6rem;
         }
+
+        .nav-controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .nav-controls button {
+            padding: 12px 24px;
+            min-width: 130px;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 999px;
+            border: none;
+            background: linear-gradient(135deg, #0d6efd, #6f42c1);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .nav-controls button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #6f42c1, #0d6efd);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-controls button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
     </style>
 
     <div class="container mt-4 d-flex flex-column" style="min-height: 90vh;">
@@ -136,22 +172,33 @@
                     @endphp
                     <li>
                         <a class="dropdown-item dropdown-item-fillblank d-flex align-items-center gap-2"
-                            href="{{ route('game.match', ['ids' => $encodedIds]) }}">
-                            <i class="fas fa-sync-alt text-primary"></i> Tìm cặp
+                            href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-clone text-primary"></i> Flashcard
                         </a>
                     </li>
                     <li>
                         <a class="dropdown-item dropdown-item-fillblank d-flex align-items-center gap-2"
-                            href="{{ route('game.study', ['ids' => $encodedIds]) }}">
-                            <i class="fas fa-file-alt text-primary"></i> Học tập
+                            href="{{ route('game.match', ['ids' => $encodedIds]) }}">
+                            <i class="fas fa-sync-alt text-primary"></i> Tìm cặp
                         </a>
                     </li>
+                    @if (isset($idsArray) && count($idsArray) > 3)
+                        <li>
+                            <a class="dropdown-item dropdown-item-fillblank d-flex align-items-center gap-2"
+                                href="{{ route('game.study', ['ids' => $encodedIds]) }}">
+                                <i class="fas fa-file-alt text-primary"></i> Học tập
+                            </a>
+                        </li>
+                    @endif
                     <li>
                         <a class="dropdown-item dropdown-item-fillblank d-flex align-items-center gap-2"
                             href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}">
                             <i class="fas fa-layer-group text-primary"></i> Điền chỗ trống
                         </a>
                     </li>
+                    <li><a class="dropdown-item dropdown-item-fillblank d-flex align-items-center gap-2"
+                            href="{{ route('game.essay', ['ids' => $encodedIds]) }}"><i
+                                class="fas fa-edit text-primary"></i> Tự luận</a></li>
                     <li>
                         <hr class="dropdown-divider-fillblank">
                     </li>
@@ -168,7 +215,7 @@
             </button>
         </div>
 
-        <h2 class="fw-bold text-secondary text-center mb-4">📝 Bài kiểm tra điền chỗ trống</h2>
+        <h2 class="fw-bold text-dark text-center mb-4">Bài kiểm tra điền chỗ trống</h2>
 
         <div class="content-area mt-3" id="quizContainer">
         </div>

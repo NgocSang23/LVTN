@@ -1,7 +1,6 @@
 <?php
 
 use App\AI\Ochat;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AiSuggestionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClassroomController;
@@ -15,20 +14,24 @@ use App\Http\Controllers\FlashcardSetController;
 use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HomeworkHistoryController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// ========== ADMIN ROUTES ==========
-Route::prefix('admin')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout']);
+// ========== PUBLIC ROUTES ==========
+Route::get('/', [UserController::class, 'dashboard'])->name('user.dashboard');
+
+Route::get('/flashcard/share/{slug}', [FlashcardSetController::class, 'publicView'])->name('flashcard.share');
+Route::get('/flashcards/share/base64/{encodedIds}', [FlashcardSetController::class, 'share'])->name('flashcards.share_view');
+
+Route::prefix('define')->name('define.')->group(function () {
+    Route::get('/{id}/edit', [FlashcardDefineEssayController::class, 'editAll'])->name('edit');
+    Route::delete('/{id}', [FlashcardDefineEssayController::class, 'destroyAll'])->name('destroy');
 });
 
-Route::middleware(['auth:sanctum'])->get('/api/me', function (Request $request) {
-    return $request->user();
-});
+Route::get('/admin/{any?}', fn() => view('admin.welcome'))->where('any', '.*');
 
 // ========== GUEST ROUTES ==========
 Route::middleware('guest')->group(function () {
@@ -41,21 +44,6 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
     Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 });
-
-// ========== PUBLIC ROUTES ==========
-Route::get('/flashcard/share/{slug}', [FlashcardSetController::class, 'publicView'])->name('flashcard.share');
-Route::get('/flashcards/share/base64/{encodedIds}', [FlashcardSetController::class, 'share'])->name('flashcards.share_view');
-
-Route::get('/', [UserController::class, 'dashboard'])->name('user.dashboard');
-
-Route::prefix('define')->name('define.')->group(function () {
-    Route::get('/{id}/edit', [FlashcardDefineEssayController::class, 'editAll'])->name('edit');
-    Route::delete('/{id}', [FlashcardDefineEssayController::class, 'destroyAll'])->name('destroy');
-});
-
-Route::get('/admin/{any?}', function () {
-    return view('admin.welcome');
-})->where('any', '.*');
 
 // ========== AUTH ROUTES ==========
 Route::middleware('auth')->prefix('user')->group(function () {
@@ -74,7 +62,7 @@ Route::middleware('auth')->prefix('user')->group(function () {
     // Flashcard Multiple Choice
     Route::resource('flashcard_multiple_choice', FlashcardMultipleChoiceController::class);
 
-    // Route load partial HTML block tạo thêm câu hỏi quiz
+    // Quiz partial block
     Route::get('/quiz/question-partial', function () {
         $index = request()->get('index', 0);
         return view('partials.quiz_create_question_block', compact('index'));
@@ -86,10 +74,11 @@ Route::middleware('auth')->prefix('user')->group(function () {
 
     // Flashcard Games
     Route::prefix('flashcard_define_essay')->group(function () {
-        Route::get('game_flashcard/{ids}', [FlashcardGameController::class, 'flashcard'])->name('game.flashcard');
+        Route::get('game_flashcard/{ids?}', [FlashcardGameController::class, 'flashcard'])->name('game.flashcard');
         Route::get('game_match/{ids}', [FlashcardGameController::class, 'match'])->name('game.match');
         Route::get('game_study/{ids}', [FlashcardGameController::class, 'study'])->name('game.study');
         Route::get('game_fill_blanks/{ids}', [FlashcardGameController::class, 'fillBlanks'])->name('game.fill_blank');
+        Route::get('game_essay/{ids}', [FlashcardGameController::class, 'essay'])->name('game.essay');
     });
 
     // Save user answers
@@ -98,7 +87,7 @@ Route::middleware('auth')->prefix('user')->group(function () {
 
     // Library
     Route::prefix('library')->group(function () {
-            Route::get('/', [UserController::class, 'library'])->name('user.library');
+        Route::get('/', [UserController::class, 'library'])->name('user.library');
     });
 
     // History
@@ -106,8 +95,7 @@ Route::middleware('auth')->prefix('user')->group(function () {
         Route::get('/define_essay', [HomeworkHistoryController::class, 'defineEssay'])->name('user.history_define_essay');
         Route::get('/multiple_choice', [HomeworkHistoryController::class, 'multipleChoice'])->name('user.history_multiple_choice');
         Route::post('/save', [HomeworkHistoryController::class, 'saveHistory'])->name('user.history_save');
-        Route::get('/multiple/{test_id}', [HomeworkHistoryController::class, 'detailMultipleChoice'])
-            ->name('user.history_multiple_choice_detail');
+        Route::get('/multiple/{test_id}', [HomeworkHistoryController::class, 'detailMultipleChoice'])->name('user.history_multiple_choice_detail');
     });
 
     // Difficult Flashcards
@@ -136,8 +124,6 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::delete('/classrooms/{id}/leave', [ClassroomController::class, 'leave'])->name('classrooms.leave');
     Route::delete('/classrooms/{classroom}/remove-student/{user}', [ClassroomController::class, 'removeStudent'])->name('classrooms.removeStudent');
     Route::get('/classrooms/{id}', [ClassroomController::class, 'show'])->name('classrooms.show');
-
-    // Classroom export
     Route::get('/classrooms/{id}/export-results', [ClassroomController::class, 'exportResults'])->name('classrooms.export');
 
     // Notifications
@@ -150,19 +136,9 @@ Route::middleware('auth')->prefix('user')->group(function () {
         $user->customNotifications()->where('is_read', false)->update(['is_read' => 1]);
         return response()->json(['status' => 'ok']);
     })->name('notifications.markRead');
-    // Route::get('/api/notifications/latest', function () {
-    //     /** @var \App\Models\User $user */
-    //     $user = auth()->user();
-    //     $notifications = $user->customNotifications()->orderByDesc('created_at')->take(5)->get();
-    //     $unread = $notifications->where('is_read', false)->count();
-    //     $html = view('partials.notification_dropdown', compact('notifications'))->render();
-    //     return response()->json(['html' => $html, 'unread' => $unread]);
-    // })->name('notifications.ajax');
 
-    Route::post('/classrooms/{id}/notify-incomplete', [ClassroomController::class, 'notifyIncompleteStudents'])
-        ->name('classrooms.notifyIncomplete')
-        ->middleware('can:teacher');
-
+    // Classroom Tests
+    Route::post('/classrooms/{id}/notify-incomplete', [ClassroomController::class, 'notifyIncompleteStudents'])->middleware('can:teacher')->name('classrooms.notifyIncomplete');
     Route::post('/classroom-tests/assign', [ClassroomTestController::class, 'assign'])->name('classroom_tests.assign');
     Route::post('/tests/assign', [ClassroomTestController::class, 'assign'])->name('teacher.assignTest');
 
@@ -170,17 +146,13 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::post('/ai/suggest-topic', [AiSuggestionController::class, 'suggest']);
 });
 
-// Route::get('/chatbot', function () {
-//     return view('chat_bot');
-// });
+// ========== ADMIN ROUTES ==========
+Route::prefix('admin')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+});
 
-// Route::post('/chatbot', function (Request $request) {
-//     $message = $request->input('message');
-
-//     // Gọi hàm gửi tin nhắn từ Ochat
-//     $chatbot = new Ochat();
-//     $response = $chatbot->send($message);
-
-//     // Đảm bảo response trả về dưới dạng JSON
-//     return response()->json(['response' => $response]);
-// });
+// API: Get current user
+Route::middleware(['auth:sanctum'])->get('/api/me', function (Request $request) {
+    return $request->user();
+});

@@ -114,15 +114,23 @@
                         @php
                             $encodedIds = base64_encode(implode(',', $idsArray));
                         @endphp
+                        <li><a href="{{ route('game.flashcard', ['ids' => $encodedIds]) }}"
+                                class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"><i
+                                    class="fas fa-clone text-primary"></i> Flashcard</a></li>
                         <li><a href="{{ route('game.match', ['ids' => $encodedIds]) }}"
                                 class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"><i
                                     class="fas fa-sync-alt text-primary"></i> Tìm cặp</a></li>
-                        <li><a href="{{ route('game.study', ['ids' => $encodedIds]) }}"
-                                class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"><i
-                                    class="fas fa-file-alt text-primary"></i> Học tập</a></li>
+                        @if (isset($idsArray) && count($idsArray) > 3)
+                            <li><a href="{{ route('game.study', ['ids' => $encodedIds]) }}"
+                                    class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"><i
+                                        class="fas fa-file-alt text-primary"></i> Học tập</a></li>
+                        @endif
                         <li><a href="{{ route('game.fill_blank', ['ids' => $encodedIds]) }}"
                                 class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"><i
                                     class="fas fa-file-alt text-primary"></i> Điền chỗ trống</a></li>
+                        <li><a class="dropdown-item dropdown-item-study d-flex align-items-center gap-2"
+                                href="{{ route('game.essay', ['ids' => $encodedIds]) }}"><i
+                                    class="fas fa-edit text-primary"></i> Tự luận</a></li>
                         <li>
                             <hr class="dropdown-divider dropdown-divider-study">
                         </li>
@@ -222,7 +230,8 @@
                                         {{ optional($quizData[0]['question'] ?? null)['topic']['name'] ?? 'Không rõ chủ đề' }}
                                     </h2>
                                     <div class="d-flex justify-content-end">
-                                        <button id="closeModalBtn" type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                                        <button id="closeModalBtn" type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal"
                                             style="background-color:#4B6BFF; border:none; border-radius:9999px; padding:1rem 2rem; font-weight:600; font-size:1rem; display:flex; align-items:center; gap:0.5rem; color:#fff; cursor:pointer; transition:background-color 0.3s ease; white-space:nowrap;">Đóng</button>
                                     </div>
                                 </div>

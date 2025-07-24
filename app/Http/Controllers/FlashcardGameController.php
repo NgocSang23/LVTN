@@ -200,8 +200,42 @@ class FlashcardGameController extends Controller
         ]);
     }
 
-    public function flashcard()
+    public function flashcard(Request $request, $ids = null)
     {
-        return view('user.flashcard_game.flashcard');
+        if (!$ids) {
+            return redirect()->route('user.dashboard')->with('message', 'Thiếu dữ liệu flashcard.');
+        }
+
+        $idsArray = explode(',', base64_decode($ids));
+        $flashcards = Card::whereIn('id', $idsArray)
+            ->with(['question', 'question.answers', 'question.images']) // để có content và answer
+            ->get()
+            ->shuffle();
+
+        return view('user.flashcard_game.flashcard', [
+            'flashcards' => $flashcards,
+            'idsArray' => $idsArray,
+        ]);
+    }
+
+    public function essay(Request $request)
+    {
+        $ids = base64_decode($request->ids); // giải mã danh sách ID flashcard từ query string
+        $idsArray = explode(',', $ids);
+
+        // Lấy danh sách flashcard theo ID
+        $flashcards = Card::with(['question.answers', 'question.images'])
+            ->whereIn('id', $idsArray)
+            ->get()
+            ->shuffle();
+
+        if ($flashcards->isEmpty()) {
+            return redirect()->route('user.dashboard')->with('error', 'Không tìm thấy flashcard.');
+        }
+
+        return view('user.flashcard_game.essay', [
+            'flashcards' => $flashcards,
+            'idsArray' => $idsArray,
+        ]);
     }
 }

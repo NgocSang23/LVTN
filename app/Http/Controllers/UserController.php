@@ -30,21 +30,6 @@ class UserController extends Controller
             ])
             ->take(6);
 
-        $card_essays = Card::with(['question.topic.subject', 'user'])
-            ->whereHas('question', function ($query) {
-                $query->where('type', 'essay');
-            })
-            ->latest()
-            ->get()
-            ->filter(fn($card) => $card->question && $card->question->topic)
-            ->groupBy(fn($card) => $card->question->topic->id)
-            ->map(fn($group) => [
-                'first_card' => $group->first(),
-                'card_ids' => $group->pluck('id')->implode(','),
-                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')), // 👈 thêm dòng này
-            ])
-            ->take(6);
-
         $tests = Test::with(['questionnumbers.topic', 'user'])->latest()->get()->take(6);
 
         $myClassrooms = [];
@@ -52,7 +37,7 @@ class UserController extends Controller
             $myClassrooms = ClassRoom::where('teacher_id', auth()->id())->get();
         }
 
-        return view('user.dashboard', compact('card_defines', 'card_essays', 'tests', 'myClassrooms'));
+        return view('user.dashboard', compact('card_defines', 'tests', 'myClassrooms'));
     }
 
     public function library(Request $request)

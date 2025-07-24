@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     // Lấy dữ liệu bài kiểm tra được truyền từ PHP (Laravel Blade) dưới dạng JSON.
     // `quizData` chứa một mảng các đối tượng câu hỏi. Mỗi đối tượng có thể có `question`, `display_question`, và `correct_answer_text`.
     const quizData = window.quizData ?? [];
@@ -7,12 +7,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Lấy các phần tử DOM cần thiết bằng ID của chúng.
     const quizContainer = document.getElementById("quizContainer"); // Nơi hiển thị câu hỏi hiện tại.
-    const submitButtonWrapper = document.getElementById(
-        "submitButtonWrapper"); // Wrapper chứa nút "Gửi bài kiểm tra".
-    const finalSubmitBtn = document.getElementById(
-        "finalSubmitBtn"); // Nút "Gửi bài kiểm tra" trong modal xác nhận.
-    const submitExamBtn = document.getElementById(
-        "submitExamBtn"); // Nút "Gửi bài kiểm tra" chính bên ngoài modal.
+    const submitButtonWrapper = document.getElementById("submitButtonWrapper"); // Wrapper chứa nút "Gửi bài kiểm tra".
+    const finalSubmitBtn = document.getElementById("finalSubmitBtn"); // Nút "Gửi bài kiểm tra" trong modal xác nhận.
+    const submitExamBtn = document.getElementById("submitExamBtn"); // Nút "Gửi bài kiểm tra" chính bên ngoài modal.
 
     // --- Xử lý khi không có dữ liệu bài kiểm tra ---
     // Kiểm tra xem `quizData` có rỗng hoặc không hợp lệ không.
@@ -23,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 Không có dữ liệu phù hợp. Vui lòng thử lại.
             </div>`;
         // Ẩn nút nộp bài vì không có câu hỏi để nộp.
-        submitButtonWrapper.style.display = 'none';
+        submitButtonWrapper.style.display = "none";
         // Dừng việc thực thi các phần còn lại của script.
         return;
     }
@@ -31,7 +28,8 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- Xử lý sự kiện khi người dùng cố gắng rời khỏi trang ---
     // Hàm này sẽ hiển thị một thông báo cảnh báo tiêu chuẩn của trình duyệt
     // nếu người dùng cố gắng đóng tab/cửa sổ hoặc điều hướng đi nơi khác.
-    window.onbeforeunload = () => "Bạn có chắc muốn rời khỏi bài kiểm tra? Dữ liệu chưa lưu sẽ bị mất.";
+    window.onbeforeunload = () =>
+        "Bạn có chắc muốn rời khỏi bài kiểm tra? Dữ liệu chưa lưu sẽ bị mất.";
 
     // --- Khởi tạo trạng thái bài kiểm tra ---
     let currentIndex = 0; // Biến theo dõi chỉ số của câu hỏi hiện tại (bắt đầu từ 0).
@@ -43,19 +41,19 @@ document.addEventListener("DOMContentLoaded", function() {
     const areAllQuestionsAnswered = () => {
         // Sử dụng `every()` để kiểm tra xem mọi phần tử trong mảng `answers`
         // có khác chuỗi rỗng sau khi loại bỏ khoảng trắng đầu/cuối hay không.
-        return answers.every(answer => answer.trim() !== "");
+        return answers.every((answer) => answer.trim() !== "");
     };
 
     // --- Hàm hiển thị câu hỏi hiện tại ---
     const renderQuestion = (index) => {
         const q = quizData[index]; // Lấy đối tượng câu hỏi hiện tại từ `quizData`.
-        const savedAnswer = answers[index] ||
-            ""; // Lấy câu trả lời đã lưu của người dùng cho câu hỏi này (nếu có).
+        const savedAnswer = answers[index] || ""; // Lấy câu trả lời đã lưu của người dùng cho câu hỏi này (nếu có).
 
         // Tạo HTML cho câu hỏi, thay thế "___" bằng một thẻ input.
         // `id` của input là duy nhất cho mỗi câu hỏi để dễ dàng truy cập.
         // `value` của input được đặt là `savedAnswer` để giữ lại câu trả lời nếu người dùng quay lại câu hỏi trước.
-        const questionHtml = q.question.replace("___",
+        const questionHtml = q.question.replace(
+            "___",
             `<input type="text" class="fill-blank-input" id="userAnswer_${index}" value="${savedAnswer}" />`
         );
 
@@ -64,17 +62,21 @@ document.addEventListener("DOMContentLoaded", function() {
             <div class="question-container mb-4">
                 <div class="bg-white text-dark p-4 rounded shadow-sm">
                     <p class="fw-bold">Câu ${index + 1} / ${quizData.length}</p>
-                    <p class="mb-2">❓ <strong>${q.display_question || q.question}</strong></p>
+                    <p class="mb-2">❓ <strong>${
+                        q.display_question || q.question
+                    }</strong></p>
                     <p>🔹 ${questionHtml}</p>
                     <div id="inputError" class="text-danger mt-2 fw-semibold" style="display:none;"></div>
                 </div>
-                <div class="d-flex justify-content-between mt-3">
-                    <button id="prevBtn" class="btn btn-outline-secondary rounded-pill px-4" ${
-                        index === 0 ? "disabled" : "" // Vô hiệu hóa nút "Quay lại" nếu đang ở câu đầu tiên.
-                    }>← Quay lại</button>
-                    <button id="nextBtn" class="btn btn-success rounded-pill px-4">${
-                        index === quizData.length - 1 ? "Hoàn tất" : "Tiếp theo →" // Đổi text nút nếu là câu cuối.
-                    }</button>
+                <div class="nav-controls">
+                    <button id="prevBtn" ${index === 0 ? "disabled" : ""}>
+                        <i class="fas fa-arrow-left"></i> Quay lại
+                    </button>
+                    <button id="nextBtn">
+                        ${
+                            index === quizData.length - 1 ? "Hoàn tất" : "Tiếp theo"
+                        } <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
             </div>`;
 
@@ -83,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (currentInput) {
             // Thêm trình nghe sự kiện 'input' để cập nhật `answers` ngay khi người dùng gõ.
             // Điều này giúp lưu trạng thái câu trả lời khi người dùng di chuyển giữa các câu hỏi.
-            currentInput.addEventListener('input', (event) => {
+            currentInput.addEventListener("input", (event) => {
                 answers[index] = event.target.value.trim(); // Cập nhật câu trả lời đã gõ.
                 updateSubmitButtonState(); // Cập nhật trạng thái nút "Gửi bài kiểm tra".
             });
@@ -91,13 +93,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // --- Xử lý sự kiện click cho nút "Tiếp theo" / "Hoàn tất" ---
         document.getElementById("nextBtn").onclick = () => {
-            const userInput = currentInput ? currentInput.value.trim() :
-                ""; // Lấy giá trị từ input.
+            const userInput = currentInput ? currentInput.value.trim() : ""; // Lấy giá trị từ input.
 
             // Nếu người dùng chưa điền vào chỗ trống, hiển thị lỗi.
             if (!userInput) {
                 const errorDiv = document.getElementById("inputError");
-                errorDiv.innerText = "⚠️ Vui lòng điền vào chỗ trống trước khi tiếp tục.";
+                errorDiv.innerText =
+                    "⚠️ Vui lòng điền vào chỗ trống trước khi tiếp tục.";
                 errorDiv.style.display = "block";
                 return; // Ngăn không cho chuyển sang câu hỏi tiếp theo.
             }
@@ -106,13 +108,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // Nếu đây là câu hỏi cuối cùng.
             if (index === quizData.length - 1) {
-                submitButtonWrapper.style.display = 'block'; // Hiển thị nút "Gửi bài kiểm tra".
+                submitButtonWrapper.style.display = "block"; // Hiển thị nút "Gửi bài kiểm tra".
                 updateSubmitButtonState(); // Cập nhật trạng thái nút.
             } else {
                 currentIndex++; // Tăng chỉ số câu hỏi.
                 renderQuestion(currentIndex); // Hiển thị câu hỏi tiếp theo.
-                submitButtonWrapper.style.display =
-                    'none'; // Ẩn nút "Gửi bài kiểm tra" nếu chưa phải câu cuối.
+                submitButtonWrapper.style.display = "none"; // Ẩn nút "Gửi bài kiểm tra" nếu chưa phải câu cuối.
             }
         };
 
@@ -121,12 +122,11 @@ document.addEventListener("DOMContentLoaded", function() {
         if (index > 0) {
             document.getElementById("prevBtn").onclick = () => {
                 if (currentInput) {
-                    answers[index] = currentInput.value
-                        .trim(); // Lưu câu trả lời trước khi quay lại.
+                    answers[index] = currentInput.value.trim(); // Lưu câu trả lời trước khi quay lại.
                 }
                 currentIndex--; // Giảm chỉ số câu hỏi.
                 renderQuestion(currentIndex); // Hiển thị câu hỏi trước đó.
-                submitButtonWrapper.style.display = 'none'; // Ẩn nút "Gửi bài kiểm tra".
+                submitButtonWrapper.style.display = "none"; // Ẩn nút "Gửi bài kiểm tra".
             };
         }
 
@@ -138,56 +138,64 @@ document.addEventListener("DOMContentLoaded", function() {
     // Nút sẽ được kích hoạt (enabled) nếu tất cả câu hỏi đã được trả lời, ngược lại sẽ bị vô hiệu hóa (disabled).
     const updateSubmitButtonState = () => {
         if (areAllQuestionsAnswered()) {
-            submitExamBtn.removeAttribute('disabled'); // Bỏ thuộc tính disabled.
+            submitExamBtn.removeAttribute("disabled"); // Bỏ thuộc tính disabled.
         } else {
-            submitExamBtn.setAttribute('disabled', 'disabled'); // Thêm thuộc tính disabled.
+            submitExamBtn.setAttribute("disabled", "disabled"); // Thêm thuộc tính disabled.
         }
     };
 
     // --- Xử lý sự kiện click cho nút "Gửi bài kiểm tra" (bên ngoài modal) ---
     submitExamBtn.addEventListener("click", () => {
         // Tạo một instance của modal xác nhận và hiển thị nó.
-        const confirmModal = new bootstrap.Modal(document.getElementById('confirmSubmitModal'));
+        const confirmModal = new bootstrap.Modal(
+            document.getElementById("confirmSubmitModal")
+        );
         confirmModal.show();
     });
 
     // --- Xử lý sự kiện click cho nút "Gửi bài kiểm tra" (trong modal xác nhận) ---
     finalSubmitBtn.addEventListener("click", () => {
         // Lấy instance của modal xác nhận.
-        const confirmModalInstance = bootstrap.Modal.getInstance(document.getElementById(
-            'confirmSubmitModal'));
+        const confirmModalInstance = bootstrap.Modal.getInstance(
+            document.getElementById("confirmSubmitModal")
+        );
         if (confirmModalInstance) {
             confirmModalInstance.hide(); // Ẩn modal xác nhận.
         }
 
         let correctCount = 0; // Biến đếm số câu trả lời đúng.
-        let resultHtml =
-            `<ul class="list-group list-group-flush">`; // Bắt đầu chuỗi HTML cho kết quả.
+        let resultHtml = `<ul class="list-group list-group-flush">`; // Bắt đầu chuỗi HTML cho kết quả.
 
         // Duyệt qua từng câu hỏi trong `quizData` để kiểm tra và hiển thị kết quả.
         quizData.forEach((q, index) => {
-            const userAnswer = answers[index]?.trim() ||
-                ""; // Lấy câu trả lời của người dùng.
+            const userAnswer = answers[index]?.trim() || ""; // Lấy câu trả lời của người dùng.
             const correctAnswer = q.correct_answer_text?.trim() || ""; // Lấy đáp án đúng.
             // So sánh câu trả lời của người dùng với đáp án đúng (không phân biệt hoa thường).
-            const isCorrect = userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+            const isCorrect =
+                userAnswer.toLowerCase() === correctAnswer.toLowerCase();
 
             if (isCorrect) correctCount++; // Tăng biến đếm nếu đúng.
 
             // Tạo câu đầy đủ với từ đã điền của người dùng, được gạch chân và tô màu (xanh nếu đúng, đỏ nếu sai).
-            let fullQuestionWithAnswer = q.question.replace("___",
-                `<span class="filled-answer-underline ${isCorrect ? 'text-success' : 'text-danger'}">${userAnswer || '[Chưa trả lời]'}</span>`
+            let fullQuestionWithAnswer = q.question.replace(
+                "___",
+                `<span class="filled-answer-underline ${
+                    isCorrect ? "text-success" : "text-danger"
+                }">${userAnswer || "[Chưa trả lời]"}</span>`
             );
 
             // Tạo câu đầy đủ với đáp án đúng, được gạch chân và tô màu vàng.
-            let fullQuestionWithCorrectAnswer = q.question.replace("___",
+            let fullQuestionWithCorrectAnswer = q.question.replace(
+                "___",
                 `<span class="filled-answer-underline text-warning">${correctAnswer}</span>`
             );
 
             // Thêm HTML cho kết quả của từng câu hỏi vào chuỗi `resultHtml`.
             resultHtml += `
                 <li class="list-group-item bg-dark text-white border-secondary">
-                    <p><strong>Câu ${index + 1}:</strong> ${q.display_question || q.question}</p>
+                    <p><strong>Câu ${index + 1}:</strong> ${
+                q.display_question || q.question
+            }</p>
                     <p>🔹 <strong>Câu trả lời của bạn:</strong> ${fullQuestionWithAnswer}</p>
                     <p>✅ <strong>Đáp án đúng:</strong> ${fullQuestionWithCorrectAnswer}</p>
                     <hr class="text-secondary">
@@ -202,7 +210,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
         document.getElementById("resultBody").innerHTML = resultHtml;
 
-        const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+        const resultModal = new bootstrap.Modal(
+            document.getElementById("resultModal")
+        );
         resultModal.show();
     });
 
