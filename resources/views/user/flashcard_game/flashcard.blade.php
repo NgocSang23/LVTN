@@ -4,65 +4,172 @@
 
 @section('content')
     <style>
+        /* Tổng thể Flashcard Wrapper */
         .flashcard-wrapper {
-            perspective: 1000px;
+            perspective: 1200px;
+            /* Tăng phối cảnh để hiệu ứng 3D sâu hơn */
             width: 100%;
-            max-width: 640px;
+            max-width: 680px;
+            /* Tăng nhẹ độ rộng tối đa */
             margin: 0 auto;
+            min-height: 300px;
+            /* Đảm bảo chiều cao tối thiểu để nội dung không bị co lại quá nhiều */
+            display: flex;
+            /* Dùng flexbox để căn giữa nội dung thẻ */
+            align-items: center;
+            /* Căn giữa theo chiều dọc */
+            justify-content: center;
+            /* Căn giữa theo chiều ngang */
         }
 
+        /* Lớp bao bọc phần lật của Flashcard */
         .flashcard-inner {
             position: relative;
             width: 100%;
+            height: 100%;
+            /* Đảm bảo inner full height của wrapper */
             min-height: 260px;
-            transition: transform 0.8s;
+            /* Giữ lại min-height cho nội dung */
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            /* Easing function mượt mà hơn */
             transform-style: preserve-3d;
             cursor: pointer;
+            border-radius: 1.25rem;
+            /* Đồng bộ với mặt thẻ */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            /* Bóng đổ mạnh hơn, hiện đại hơn */
         }
 
+        /* Hiệu ứng lật thẻ */
         .flashcard-flip {
             transform: rotateY(180deg);
         }
 
+        /* Mặt trước và mặt sau của Flashcard */
         .flashcard-face {
             position: absolute;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
-            background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+            /* Quan trọng cho hiệu ứng 3D */
+            background: linear-gradient(135deg, #ffffff, #f0f2f5);
+            /* Nền gradient nhẹ nhàng, hiện đại */
             border-radius: 1.25rem;
-            border: 1px solid #ddd;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-            padding: 30px 24px;
+            border: 1px solid #e0e0e0;
+            /* Border tinh tế hơn */
+            padding: 30px 28px;
+            /* Tăng padding để nội dung có không gian thở */
+            display: flex;
+            flex-direction: column;
+            /* Sắp xếp các phần tử con theo chiều dọc */
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            /* Kích thước chữ lớn hơn */
+            font-weight: 600;
+            /* Font weight mạnh mẽ hơn */
+            color: #343a40;
+            /* Màu chữ đậm hơn */
+            text-align: center;
+            overflow: hidden;
+            /* Đảm bảo nội dung không tràn ra ngoài */
+        }
+
+        /* Mặt sau của Flashcard */
+        .flashcard-back {
+            transform: rotateY(180deg);
+            /* Đảm bảo mặt sau cũng có background và shadow tương tự */
+            background: linear-gradient(135deg, #f0f2f5, #ffffff);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Nút Nghe trên Flashcard */
+        .flashcard-face .play-audio {
+            position: absolute;
+            /* Đặt vị trí tuyệt đối để không ảnh hưởng bố cục text */
+            top: 15px;
+            /* Khoảng cách từ trên xuống */
+            right: 15px;
+            /* Khoảng cách từ phải sang */
+            z-index: 2;
+            /* Đảm bảo nút nằm trên các nội dung khác */
+            font-size: 0.95rem;
+            /* Kích thước chữ cho nút */
+            padding: 8px 14px;
+            /* Kích thước nút lớn hơn chút */
+            border-radius: 25px;
+            /* Nút bo tròn */
+            background-color: rgba(255, 255, 255, 0.8);
+            /* Nền hơi trong suốt */
+            border: 1px solid #ced4da;
+            color: #495057;
+            transition: background-color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .flashcard-face .play-audio:hover {
+            background-color: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        /* Vùng chứa văn bản trên Flashcard */
+        .text-container {
+            width: 100%;
+            /* Loại bỏ padding-right cứng nhắc, để nút 'play-audio' không ảnh hưởng bố cục */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+            /* Cho phép vùng text mở rộng */
+            padding: 0 10px;
+            /* Thêm padding ngang nhẹ */
+        }
+
+        /* Vùng chứa ảnh trên Flashcard */
+        #flashcardImage {
+            max-width: 150px;
+            /* Tăng kích thước ảnh tối đa */
+            max-height: 120px;
+            /* Tăng chiều cao tối đa */
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            /* Bo tròn ảnh hơn */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            /* Bóng đổ rõ ràng hơn */
+            margin-top: 15px;
+            /* Khoảng cách trên nếu có ảnh */
+            margin-bottom: 10px;
+            /* Khoảng cách dưới nếu có ảnh */
+        }
+
+        /* Nội dung câu trả lời trên mặt sau */
+        .flashcard-back .answer-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            /* Sắp xếp dọc nếu có ảnh bên dưới */
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .flashcard-back #flashcardAnswerText {
+            text-align: center;
+            /* Căn giữa văn bản trả lời */
+            margin-bottom: 15px;
+            /* Khoảng cách dưới nếu có ảnh */
+            flex-grow: 1;
+            /* Cho phép phần trả lời mở rộng */
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
-            font-weight: 500;
-            color: #333;
-            flex-direction: column;
-            text-align: center;
-        }
-
-        .flashcard-back {
-            transform: rotateY(180deg);
-        }
-
-        .flashcard-back .answer-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
             width: 100%;
-            gap: 16px;
-        }
-
-        #flashcardImage {
-            width: 100px;
-            height: auto;
-            max-height: 100px;
-            object-fit: contain;
-            border-radius: 0.5rem;
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
         }
 
         .nav-controls {
@@ -129,6 +236,15 @@
         .dropdown-divider-flashcard {
             border-top: 1px solid #30363d;
         }
+
+        .btn-audio {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 2;
+            padding: 6px 10px;
+            font-size: 0.9rem;
+        }
     </style>
 
     <div class="container mt-4" style="min-height: 90vh;">
@@ -180,17 +296,30 @@
         <h2 class="fw-bold text-dark text-center mb-4">Flashcard</h2>
 
         {{-- Flashcard --}}
-        <div class="flashcard-wrapper mb-4" onclick="flipFlashcard()">
+        <div class="flashcard-wrapper">
             <div id="flashcardInner" class="flashcard-inner">
-                <div class="flashcard-face flashcard-front" id="flashcardFront">Nhấn để xem câu trả lời</div>
-                <div class="flashcard-face flashcard-back d-flex flex-row justify-content-between align-items-center gap-3">
-                    <div id="flashcardAnswerText" class="flex-fill text-start">
-                        Đáp án ở đây
+
+                {{-- Mặt trước (Câu hỏi) --}}
+                <div class="flashcard-face flashcard-front">
+                    <div class="text-container" id="flashcardFront">
+                        <p class="mb-0">Nhấn vào thẻ để xem câu trả lời</p>
                     </div>
-                    <div style="flex-shrink: 0;">
-                        <img id="flashcardImage" class="rounded shadow-sm d-none"
-                            style="width: 120px; height: auto; max-height: 100px; object-fit: contain;" />
+                    <button class="btn btn-outline-secondary play-audio" data-from="question" title="Nghe câu hỏi">
+                        <i class="fas fa-volume-up"></i> Nghe
+                    </button>
+                </div>
+
+                {{-- Mặt sau (Câu trả lời + Ảnh) --}}
+                <div class="flashcard-face flashcard-back">
+                    <div class="answer-content-wrapper">
+                        <div id="flashcardAnswerText" class="text-container">
+                            <p class="mb-0">Đáp án sẽ hiển thị ở đây</p>
+                        </div>
+                        <img id="flashcardImage" class="rounded d-none" alt="Ảnh minh họa" />
                     </div>
+                    <button class="btn btn-outline-secondary play-audio" data-from="answer" title="Nghe đáp án">
+                        <i class="fas fa-volume-up"></i> Nghe
+                    </button>
                 </div>
             </div>
         </div>

@@ -34,15 +34,60 @@
         .mark-difficult:hover {
             transform: scale(1.05);
         }
+
+        .flashcard-wrapper {
+            perspective: 1000px;
+        }
+
+        .flashcard-wrapper:hover {
+            cursor: pointer;
+            /* giữ pointer nếu hover vùng trung tâm */
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            min-height: 260px;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+        }
+
+        .flashcard-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            background: white;
+        }
+
+        .flashcard-front {
+            z-index: 2;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+
+        .play-audio:hover i {
+            color: #0d6efd;
+        }
     </style>
 
     <div class="bg-light d-flex align-items-center justify-content-center">
         <div class="container py-4" style="max-width: 900px;">
 
-            {{-- Thanh tiêu đề và nút quay lại --}}
-            <div class="d-flex align-items-center mb-3 header-bar">
-                <a href="{{ route('user.dashboard') }}" class="btn btn-primary me-3">&lt;</a>
-                <h2 class="topic_title m-0"></h2>
+            {{-- Thanh tiêu đề + nút quay lại --}}
+            <div class="d-flex justify-content-between align-items-center mb-4 px-2"
+                style="max-width: 600px; margin: 0 auto;">
+                <a href="{{ route('user.dashboard') }}" class="btn btn-outline-primary btn-sm px-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h4 class="topic_title text-center mb-0 flex-grow-1 fw-bold">Tên chủ đề</h4>
             </div>
 
             {{-- Bài kiểm tra nâng cao --}}
@@ -83,8 +128,7 @@
                     </div>
 
                     <div class="col-12 col-md-4">
-                        <a href="{{ route('game.essay', ['ids' => $encodedIds]) }}"
-                            class="btn btn-outline-info w-100 py-2">
+                        <a href="{{ route('game.essay', ['ids' => $encodedIds]) }}" class="btn btn-outline-info w-100 py-2">
                             ✏️ Tự luận
                         </a>
                     </div>
@@ -93,39 +137,48 @@
 
             {{-- Khu vực Flashcard --}}
             <div class="flashcard-area d-flex flex-column align-items-center mb-4">
-                <div class="card shadow-sm w-100 flip-card" style="max-width: 600px;">
-                    {{-- Mặt trước --}}
-                    <div class="card-body front-card-body">
-                        <div class="d-flex justify-content-between mb-4">
-                            <div></div>
-                            <button class="btn btn-light border">Ôn tập</button>
-                        </div>
-                        <div class="text-center">
-                            <div class="question-scroll" style="max-height: 150px; overflow-y: auto;">
-                                <p class="display-4 fs-4 fw-bold mb-2 question_content"></p>
+                {{-- Flashcard lật --}}
+                <div class="flashcard-wrapper w-100" style="max-width: 600px; cursor: pointer;">
+                    <div class="flashcard-inner" id="flashcardInner">
+                        {{-- Mặt trước --}}
+                        <div class="flashcard-face flashcard-front card shadow-sm">
+                            <div class="card-body d-flex flex-column justify-content-between" style="min-height: 200px;">
+                                <div class="d-flex justify-content-end mb-2 gap-2">
+                                    <button class="btn btn-light border btn-sm">Ôn tập</button>
+                                    <button class="btn btn-outline-secondary play-audio" data-from="question"
+                                        title="Nghe câu hỏi">
+                                        <i class="fas fa-volume-up"></i> Nghe
+                                    </button>
+                                </div>
+                                <div class="flex-grow-1 d-flex align-items-center justify-content-center px-3">
+                                    <p class="fw-semibold fs-5 question_content mb-0 text-center text-dark"></p>
+                                </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end mt-4">
-                            <button class="btn btn-link text-secondary"><i class="fas fa-sync-alt"></i></button>
-                        </div>
-                    </div>
 
-                    {{-- Mặt sau --}}
-                    <div class="card-body back-card-body" style="display: none;">
-                        <div class="d-flex justify-content-between mb-4">
-                            <div></div>
-                            <button class="btn btn-light border">Ôn tập</button>
-                        </div>
-                        <div class="row">
-                            <div class="col-8" style="max-height: 150px; overflow-y: auto;">
-                                <p class="display-5 fw-bold fs-4 ms-5 answer_content text-center"></p>
+                        {{-- Mặt sau --}}
+                        <div class="flashcard-face flashcard-back card shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-end mb-3 gap-2">
+                                    <button class="btn btn-light border btn-sm">Ôn tập</button>
+                                    <button class="btn btn-outline-secondary play-audio" data-from="question"
+                                        title="Nghe câu hỏi">
+                                        <i class="fas fa-volume-up"></i> Nghe
+                                    </button>
+                                </div>
+                                <div class="row align-items-center gx-3">
+                                    <div class="col-8">
+                                        <div class="answer-scroll text-center px-2 d-flex justify-content-center align-items-center gap-2"
+                                            style="max-height: 180px; overflow-y: auto;">
+                                            <p class="fw-semibold fs-5 answer_content mb-0 text-success"></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <img class="img-fluid rounded shadow-sm image_path d-none"
+                                            style="max-width: 100%; height: auto; object-fit: contain;" />
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-4">
-                                <img class="img-fluid rounded shadow-sm image_path d-none" style="width: 200px;">
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-end mt-4">
-                            <button class="btn btn-link text-secondary"><i class="fas fa-sync-alt"></i></button>
                         </div>
                     </div>
                 </div>
@@ -144,14 +197,14 @@
                                 <i class="far fa-frown me-1"></i> <span>Khó</span>
                             </div>
                         </div>
-                        <!-- ✅ THÊM PHẦN NÀY -->
                         <div class="d-flex justify-content-center mt-2">
                             <div class="resolve-container"></div>
                         </div>
-                        <div class="d-flex align-items-center">
-                            <button class="btn btn-primary prev-question me-3">&lt;</button>
-                            <span class="current-question">1</span>/<span class="total-questions">2</span>
-                            <button class="btn btn-primary next-question ms-3">&gt;</button>
+                        <div class="d-flex align-items-center mt-3">
+                            <button class="btn btn-primary prev-question me-3 px-4">&lt;</button>
+                            <span class="current-question fw-semibold">1</span>/<span
+                                class="total-questions fw-semibold">2</span>
+                            <button class="btn btn-primary next-question ms-3 px-4">&gt;</button>
                         </div>
                     </div>
 
@@ -172,19 +225,22 @@
             <hr>
 
             {{-- Danh sách định nghĩa dạng bảng --}}
-            <div class="definition-list mt-4 w-100 mx-auto" style="max-width: 700px;">
-                <table class="table table-bordered table-striped bg-white">
-                    <thead class="table-dark">
-                        <tr>
-                            <th scope="col">Câu hỏi</th>
-                            <th scope="col">Định nghĩa / Đáp án</th>
-                            <th scope="col" class="text-center"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="definition-table-body">
-                        {{-- Dữ liệu sẽ được JS render vào đây --}}
-                    </tbody>
-                </table>
+            <div class="definition-list mt-4 mx-auto w-100">
+                <div class="card shadow-sm rounded">
+                    <div class="card-body p-0">
+                        <table class="table table-bordered table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 35%">Câu hỏi</th>
+                                    <th style="width: 50%">Đáp án</th>
+                                </tr>
+                            </thead>
+                            <tbody class="definition-table-body">
+                                {{-- Dữ liệu sẽ được JS render vào đây --}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -345,36 +401,6 @@
                     });
             }
 
-            // Lắng nghe sự kiện lật thẻ flashcard
-            // Lấy phần tử có class 'flip-card'. Đây thường là phần tử cha của cả mặt trước và mặt sau thẻ.
-            let flipCard = document.querySelector('.flip-card');
-            // Kiểm tra xem phần tử flipCard có tồn tại không trước khi thêm lắng nghe sự kiện.
-            if (flipCard) {
-                // Thêm sự kiện 'click' vào thẻ flashcard.
-                flipCard.addEventListener('click', function() {
-                    // flipCard.classList.toggle('flipped');
-                    // Thêm hoặc xóa class 'flipped' khỏi thẻ.
-                    // Class này thường được dùng với CSS để tạo hiệu ứng lật thẻ (ví dụ: dùng transform: rotateY()).
-                    flipCard.classList.toggle('flipped');
-
-                    // Lấy phần tử chứa nội dung mặt sau của thẻ.
-                    let backCardBody = document.querySelector('.back-card-body');
-                    if (backCardBody) {
-                        // Nếu thẻ bị lật (có class 'flipped'), hiển thị mặt sau.
-                        if (flipCard.classList.contains('flipped')) {
-                            backCardBody.style.display = 'block'; // Hiển thị mặt sau.
-                        } else {
-                            backCardBody.style.display =
-                                'none'; // Ẩn mặt sau khi thẻ được lật về mặt trước.
-                        }
-                        saveAnswer(); // Gọi hàm lưu câu trả lời mỗi khi thẻ được lật.
-                    } else {
-                        console.error(
-                            "Element .back-card-body not found."); // Báo lỗi nếu không tìm thấy phần tử.
-                    }
-                });
-            }
-
             // Hàm lưu câu trả lời của người dùng khi lật thẻ
             // Hàm này gửi một yêu cầu POST đến server để ghi nhận việc người dùng đã xem một câu hỏi.
             function saveAnswer() {
@@ -444,16 +470,27 @@
                 // Duyệt qua tất cả các câu hỏi để tạo hàng cho bảng hiển thị danh sách định nghĩa.
                 questions.forEach((cardData) => {
                     let question = cardData.question;
-                    let answer = (question.answers && question.answers.length > 0) ? question.answers[0]
-                        .content : "Chưa có đáp án";
+                    let answer = (question.answers && question.answers.length > 0) ?
+                        question.answers[0].content :
+                        "Chưa có đáp án";
 
-                    // Thêm HTML cho mỗi hàng vào chuỗi listQuestion.
                     listQuestion += `
                         <tr>
-                            <td class="fw-bold">${question.content}</td>
-                            <td>${answer}</td>
-                            <td class="text-center">
-                                <i class="fas fa-volume-up text-primary" role="button"></i>
+                            <td class="align-middle">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold text-dark">${question.content}</span>
+                                    <button class="btn btn-sm btn-light border play-audio ms-2" data-text="${question.content}" title="Nghe câu hỏi">
+                                        <i class="fas fa-volume-up text-secondary"></i>
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-dark">${answer}</span>
+                                    <button class="btn btn-sm btn-light border play-audio ms-2" data-text="${answer}" title="Nghe đáp án">
+                                        <i class="fas fa-volume-up text-secondary"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -802,6 +839,195 @@
                                 });
                         });
                 });
+            });
+
+            // Bắt sự kiện khi click vào flashcard
+            document.querySelector('.flashcard-wrapper')?.addEventListener('click', function(e) {
+                // ⛔ Bỏ qua nếu click vào nút nghe hoặc nút ôn tập
+                if (e.target.closest('.play-audio') || e.target.closest('button')) return;
+
+                const inner = document.getElementById('flashcardInner');
+                if (inner) {
+                    inner.classList.toggle('flipped');
+                    if (typeof saveAnswer === 'function') saveAnswer();
+                }
+            });
+
+            // Hàm 'getVoiceByLang' này được dùng để tìm kiếm và chọn giọng đọc phù hợp nhất
+            function getVoiceByLang(lang, genderPreference = 'female', preferredNames = []) {
+                // Lấy tất cả các giọng đọc có sẵn trên hệ thống của người dùng.
+                // 'speechSynthesis.getVoices()' trả về một mảng các đối tượng 'SpeechSynthesisVoice'.
+                const voices = speechSynthesis.getVoices();
+                let foundVoice = null; // Biến để lưu trữ giọng đọc tìm được.
+
+                // --- Ưu tiên 1: Tìm giọng theo tên được chỉ định và giới tính mong muốn ---
+                // Kiểm tra xem có danh sách tên ưu tiên nào được cung cấp không (ví dụ: ['Google Tiếng Việt', 'Microsoft Zira']).
+                if (preferredNames.length > 0) {
+                    // Lặp qua từng tên trong danh sách ưu tiên.
+                    for (const name of preferredNames) {
+                        // Sử dụng 'find()' để tìm giọng đọc đầu tiên thỏa mãn các điều kiện:
+                        foundVoice = voices.find(v =>
+                            // 1. Ngôn ngữ của giọng đọc phải khớp với 'lang' (ví dụ: 'vi-VN' hoặc 'en-US').
+                            v.lang === lang &&
+                            // 2. Tên của giọng đọc (chuyển về chữ thường) phải chứa tên ưu tiên (cũng chuyển về chữ thường).
+                            // Ví dụ: nếu 'name' là "Microsoft An", nó sẽ tìm giọng "Microsoft An - Vietnamese (Vietnam)".
+                            v.name.toLowerCase().includes(name.toLowerCase()) &&
+                            // 3. Kiểm tra giới tính:
+                            //    - Nếu 'genderPreference' là 'any', thì không cần kiểm tra giới tính (luôn đúng).
+                            //    - Ngược lại, tên giọng đọc (chuyển về chữ thường) phải chứa từ khóa giới tính (ví dụ: "female").
+                            (genderPreference === 'any' || v.name.toLowerCase().includes(genderPreference))
+                        );
+                        // Nếu tìm thấy một giọng đọc thỏa mãn, trả về ngay lập tức để sử dụng giọng ưu tiên này.
+                        if (foundVoice) return foundVoice;
+                    }
+                }
+
+                // --- Ưu tiên 2: Nếu không tìm thấy giọng nào theo tên ưu tiên, tìm giọng chỉ theo giới tính mong muốn ---
+                // Sử dụng 'find()' để tìm giọng đọc đầu tiên thỏa mãn các điều kiện:
+                foundVoice = voices.find(v =>
+                    // 1. Ngôn ngữ của giọng đọc phải khớp với 'lang'.
+                    v.lang === lang &&
+                    // 2. Kiểm tra giới tính tương tự như trên.
+                    (genderPreference === 'any' || v.name.toLowerCase().includes(genderPreference))
+                );
+                // Nếu tìm thấy một giọng đọc thỏa mãn, trả về nó.
+                if (foundVoice) return foundVoice;
+
+                // --- Ưu tiên 3: Nếu vẫn không tìm thấy, chỉ cần tìm giọng theo ngôn ngữ (bất kể giới tính) ---
+                // Nếu không có giọng nào khớp với tiêu chí giới tính hoặc tên ưu tiên,
+                // chỉ cần trả về giọng đầu tiên có ngôn ngữ khớp.
+                // Nếu không tìm thấy giọng nào cả, trả về 'null'.
+                return voices.find(v => v.lang === lang) || null;
+            };
+
+            // --- Xử lý sự kiện khi danh sách giọng đọc thay đổi hoặc được tải lần đầu ---
+            // 'speechSynthesis.onvoiceschanged' là một sự kiện được kích hoạt khi trình duyệt
+            // đã tải xong danh sách các giọng nói hoặc khi có sự thay đổi trong danh sách đó.
+            // Điều này rất quan trọng vì 'getVoices()' có thể trả về mảng rỗng nếu gọi quá sớm.
+            speechSynthesis.onvoiceschanged = () => {
+                const voices = speechSynthesis
+                    .getVoices(); // Lấy lại danh sách giọng đọc sau khi sự kiện kích hoạt.
+                console.log(
+                    "--- Available voices (onvoiceschanged) ---"
+                ); // In ra tiêu đề để dễ theo dõi trong console.
+
+                // Kiểm tra xem có giọng đọc nào được tìm thấy không.
+                if (voices.length === 0) {
+                    console.log(
+                        "No voices found yet, trying again in a moment."); // Thông báo nếu chưa có giọng nào.
+                } else {
+                    // Lặp qua từng giọng đọc để in thông tin chi tiết.
+                    voices.forEach((v, i) => {
+                        // Cải thiện logic xác định giới tính:
+                        // Chúng ta kiểm tra tên của giọng đọc (chuyển về chữ thường) để đoán giới tính.
+                        // Đây là một phỏng đoán dựa trên các tên phổ biến của giọng Microsoft như "Zira", "Ava" (nữ)
+                        // hoặc "David", "Mark" (nam).
+                        const gender = v.name.toLowerCase().includes("female") || v.name.toLowerCase()
+                            .includes("zira") || v.name.toLowerCase().includes("ava") || v.name
+                            .toLowerCase().includes("emma") || v.name.toLowerCase().includes("jenny") ||
+                            v.name.toLowerCase().includes("michelle") || v.name.toLowerCase().includes(
+                                "aria") ? "Female" :
+                            v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes(
+                                "david") || v.name.toLowerCase().includes("mark") || v.name
+                            .toLowerCase().includes("andrew") || v.name.toLowerCase().includes(
+                                "brian") || v.name.toLowerCase().includes("christopher") || v.name
+                            .toLowerCase().includes("eric") || v.name.toLowerCase().includes("guy") || v
+                            .name.toLowerCase().includes("roger") || v.name.toLowerCase().includes(
+                                "steffan") ? "Male" : "Unknown";
+                        // In thông tin chi tiết của từng giọng đọc ra console: số thứ tự, tên, ngôn ngữ và giới tính đã đoán.
+                        console.log(`${i + 1}. Name: ${v.name}, Lang: ${v.lang}, Gender: ${gender}`);
+                    });
+                }
+                console.log("--- End of voices list ---"); // Kết thúc danh sách.
+            };
+
+            // --- Xử lý sự kiện khi DOM (Document Object Model) đã được tải hoàn chỉnh ---
+            // 'DOMContentLoaded' đảm bảo rằng toàn bộ HTML của trang đã được phân tích cú pháp
+            // và sẵn sàng để thao tác. Chúng ta gọi 'getVoices()' ở đây một lần nữa
+            // phòng trường hợp 'onvoiceschanged' không kích hoạt lại khi tải lại trang (nếu giọng đã sẵn sàng).
+            document.addEventListener('DOMContentLoaded', () => {
+                const voices = speechSynthesis.getVoices(); // Lấy danh sách giọng đọc.
+                // Nếu có giọng đọc ngay lập tức khi DOMContentLoaded.
+                if (voices.length > 0) {
+                    console.log("--- Available voices (DOMContentLoaded) ---"); // In ra tiêu đề.
+                    voices.forEach((v, i) => {
+                        // Tương tự, đoán và in giới tính của từng giọng đọc.
+                        const gender = v.name.toLowerCase().includes("female") || v.name
+                            .toLowerCase().includes("zira") || v.name.toLowerCase().includes(
+                                "ava") || v.name.toLowerCase().includes("emma") || v.name
+                            .toLowerCase()
+                            .includes("jenny") || v.name.toLowerCase().includes("michelle") || v
+                            .name.toLowerCase().includes("aria") ? "Female" :
+                            v.name.toLowerCase().includes("male") || v.name.toLowerCase().includes(
+                                "david") || v.name.toLowerCase().includes("mark") || v.name
+                            .toLowerCase().includes("andrew") || v.name.toLowerCase().includes(
+                                "brian") || v.name.toLowerCase().includes("christopher") || v.name
+                            .toLowerCase().includes("eric") || v.name.toLowerCase().includes(
+                                "guy") || v.name.toLowerCase().includes("roger") || v.name
+                            .toLowerCase()
+                            .includes("steffan") ? "Male" : "Unknown";
+                        console.log(
+                            `${i + 1}. Name: ${v.name}, Lang: ${v.lang}, Gender: ${gender}`);
+                    });
+                    console.log("--- End of voices list ---");
+                } else {
+                    // Nếu chưa có giọng nào, thông báo rằng đang đợi 'onvoiceschanged'.
+                    console.log(
+                        "No voices available immediately on DOMContentLoaded. Waiting for onvoiceschanged."
+                    );
+                }
+            });
+
+            // Lắng nghe sự kiện click trên toàn bộ tài liệu.
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.play-audio')) {
+                    const button = e.target.closest('.play-audio');
+
+                    // 🔎 Lấy văn bản: nếu có `data-text` thì dùng, nếu không thì lấy từ .question_content hoặc .answer_content
+                    let text = button.dataset.text || '';
+                    const from = button.dataset.from;
+
+                    if (!text && from === 'question') {
+                        const qEl = document.querySelector('.question_content');
+                        text = qEl ? qEl.textContent.trim() : '';
+                    } else if (!text && from === 'answer') {
+                        const aEl = document.querySelector('.answer_content');
+                        text = aEl ? aEl.textContent.trim() : '';
+                    }
+
+                    if (!text) return; // Không có nội dung thì bỏ qua
+
+                    const utterance = new SpeechSynthesisUtterance(text);
+
+                    // 🌐 Đoán ngôn ngữ
+                    const vietnameseChars =
+                        /[ăâđêôơưáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/i;
+                    const lang = vietnameseChars.test(text) ? 'vi-VN' : 'en-US';
+                    utterance.lang = lang;
+
+                    let voice = null;
+                    if (lang === 'vi-VN') {
+                        voice = getVoiceByLang('vi-VN', 'female', ['Microsoft An Online', 'Microsoft An']);
+                    } else {
+                        voice = getVoiceByLang('en-US', 'female', [
+                            'Microsoft Ava Online (Natural)',
+                            'Microsoft Emma Online (Natural)',
+                            'Microsoft Jenny Online (Natural)',
+                            'Microsoft Michelle Online (Natural)',
+                            'Microsoft Aria Online (Natural)',
+                            'Microsoft Zira'
+                        ]);
+                    }
+
+                    if (voice) {
+                        utterance.voice = voice;
+                        console.log(`🔈 Using voice: ${voice.name} (${voice.lang})`);
+                    } else {
+                        console.warn(`⚠️ No preferred voice found for ${lang}. Using default.`);
+                    }
+
+                    speechSynthesis.speak(utterance);
+                }
             });
 
             // Gọi hàm fetchQuestions khi DOM đã tải xong

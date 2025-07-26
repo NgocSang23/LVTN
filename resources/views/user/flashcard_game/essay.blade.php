@@ -179,7 +179,7 @@
         </div>
 
         {{-- Tiêu đề --}}
-        <h2 class="fw-bold text-dark text-center mb-4">Làm bài tự luận</h2>
+        <h2 class="fw-bold text-dark text-center mb-4">Bài tự luận</h2>
 
         {{-- Vùng câu hỏi --}}
         <div class="essay-wrapper" id="essayContainer">
