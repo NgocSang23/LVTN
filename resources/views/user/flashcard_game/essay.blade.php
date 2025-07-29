@@ -189,19 +189,30 @@
             </div>
 
             {{-- Nhập đáp án --}}
-            <textarea class="essay-textarea" id="essayAnswer" placeholder="Viết câu trả lời tại đây..."></textarea>
+            <textarea class="essay-textarea" id="essayAnswer" placeholder="Viết câu trả lời tại đây..." spellcheck="false"></textarea>
+
+            <div class="text-center mt-3">
+                <button class="btn btn-check-progress" onclick="checkEssayProgress()">
+                    <i class="fas fa-check-circle me-2"></i>Kiểm tra
+                </button>
+            </div>
 
             {{-- Nút kiểm tra và thanh tiến độ --}}
-            <div class="text-center mt-4">
-                <button class="btn btn-check-progress" onclick="checkEssayProgress()">
-                    <i class="fas fa-check-circle me-2"></i> Kiểm tra kết quả
-                </button>
+            <div class="text-center mt-3">
+                <div id="essayLoading" class="text-info d-none">
+                    <i class="fas fa-spinner fa-spin me-2"></i>Đang kiểm tra...
+                </div>
+            </div>
 
-                <div class="progress mt-3 mx-auto" style="max-width: 400px;">
-                    <div class="progress-bar text-white text-center" id="essayProgressBar" role="progressbar"
-                        style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                        0%
-                    </div>
+            <div id="resultContainer" class="mt-2 text-center fw-bold">
+                <!-- kết quả sẽ render ở đây -->
+            </div>
+
+
+            <div class="progress mt-3 mx-auto" style="max-width: 400px;">
+                <div class="progress-bar text-white text-center" id="essayProgressBar" role="progressbar" style="width: 0%;"
+                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    0%
                 </div>
             </div>
         </div>
@@ -218,10 +229,13 @@
     <script>
         window.essayData = [
             @foreach ($flashcards as $fc)
-                @php
-                    $content = str_replace(["\r", "\n"], ['\r', '\n'], addslashes($fc->question->content ?? 'Không có câu hỏi'));
-                @endphp
-                    `{!! $content !!}`,
+                {
+                    id: {{ $fc->question->id }},
+                    content: `{!! str_replace(["\r", "\n"], ['\r', '\n'], addslashes($fc->question->content ?? 'Không có câu hỏi')) !!}`
+                }
+                @if (!$loop->last)
+                    ,
+                @endif
             @endforeach
         ];
     </script>

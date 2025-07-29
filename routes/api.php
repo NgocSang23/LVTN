@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\ApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\AI\Ochat;
+
 
 // ========== PUBLIC API ROUTES ==========
 Route::get('card_define_essay/{encodedIds}', [ApiController::class, 'card_define_essay'])->name('api.card_define');
@@ -61,4 +63,23 @@ Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function
     Route::post('/notifications', [NotificationController::class, 'store']);
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
     Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
+});
+
+Route::post('/compare-answer', function (Request $request) {
+    $validated = $request->validate([
+        'question' => 'required|string',
+        'user_answer' => 'required|string',
+        'correct_answer' => 'required|string',
+        'last_feedback' => 'nullable|string',
+    ]);
+
+    $ai = new Ochat();
+    $result = $ai->compareAnswer(
+        $validated['question'],
+        $validated['user_answer'],
+        $validated['correct_answer'],
+        $validated['last_feedback'] ?? null
+    );
+
+    return response()->json($result);
 });

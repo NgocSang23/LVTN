@@ -26,7 +26,8 @@ class FlashcardGameController extends Controller
 
         $cards = Card::whereIn('id', $idsArray)
             ->with(['question', 'question.topic', 'question.answers'])
-            ->get();
+            ->get()
+            ->shuffle();
 
         $pairs = [];
 

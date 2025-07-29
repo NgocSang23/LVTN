@@ -200,7 +200,16 @@ class FlashcardDefineEssayController extends Controller
             $correctAnswer = $question->answers->first()->content ?? 'Không có đáp án';
 
             $chatbot = new Ochat();
-            $response = $chatbot->compareAnswer($question->content, $data['answeruser_content'], $correctAnswer);
+            $start = microtime(true); // ⏱️ Bắt đầu đo thời gian
+
+            $response = $chatbot->compareAnswer(
+                $question->content,
+                $data['answeruser_content'],
+                $correctAnswer
+            );
+
+            $end = microtime(true); // ⏱️ Kết thúc đo thời gian
+            Log::info("⏱️ Thời gian xử lý AI:", ['seconds' => round($end - $start, 3)]);
 
             Log::info("Gửi tới AI:", [
                 'question' => $question->content,
