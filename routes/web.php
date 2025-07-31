@@ -53,7 +53,7 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::put('/profile', [UserController::class, 'update_profile'])->name('user.update_profile');
 
     // Search
-    Route::get('/search', [SearchController::class, 'show'])->name('user.search');
+    Route::post('/search/instant', [SearchController::class, 'instant'])->name('search.instant');
 
     // Flashcard Define Essay
     Route::resource('flashcard_define_essay', FlashcardDefineEssayController::class)->except(['show']);
@@ -92,11 +92,11 @@ Route::middleware('auth')->prefix('user')->group(function () {
 
     // History
     Route::prefix('history')->group(function () {
-        Route::get('/define_essay', [HomeworkHistoryController::class, 'defineEssay'])->name('user.history_define_essay');
-        Route::get('/multiple_choice', [HomeworkHistoryController::class, 'multipleChoice'])->name('user.history_multiple_choice');
         Route::post('/save', [HomeworkHistoryController::class, 'saveHistory'])->name('user.history_save');
         Route::get('/multiple/{test_id}', [HomeworkHistoryController::class, 'detailMultipleChoice'])->name('user.history_multiple_choice_detail');
     });
+
+    Route::get('/history', [HomeworkHistoryController::class, 'index'])->name('user.history');
 
     // Difficult Flashcards
     Route::post('/flashcard/difficult', [DifficultCardController::class, 'mark'])->name('flashcard.mark_difficult');

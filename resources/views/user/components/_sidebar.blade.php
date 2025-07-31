@@ -23,9 +23,8 @@
         </a>
     </li>
 
-    <li
-        class="nav-item {{ request()->routeIs('user.history_define_essay') || request()->routeIs('user.history_multiple_choice') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('user.history_define_essay') }}">
+    <li class="nav-item {{ request()->routeIs('user.history') ? 'active' : '' }}">
+        <a class="nav-link" href="{{ route('user.history') }}">
             <i class="fa-solid fa-clock-rotate-left"></i>
             <span>Kết quả học tập</span>
         </a>

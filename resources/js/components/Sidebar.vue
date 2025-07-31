@@ -19,9 +19,8 @@
         <!-- Dashboard -->
         <li class="nav-item active">
             <router-link
-                class="nav-link text-white"
+                class="nav-link"
                 to="/dashboard"
-                active-class="bg-primary"
             >
                 <i class="fa-solid fa-house"></i>
                 <span>Bảng điều khiển</span>
@@ -34,9 +33,8 @@
 
         <li class="nav-item">
             <router-link
-                class="nav-link text-white"
+                class="nav-link"
                 to="/admin/user"
-                active-class="bg-primary"
             >
                 <i class="fa-solid fa-users"></i>
                 <span>Danh sách người dùng</span>
@@ -45,9 +43,8 @@
 
         <li class="nav-item">
             <router-link
-                class="nav-link text-white"
+                class="nav-link"
                 to="/admin/assign-role"
-                active-class="bg-primary"
             >
                 <i class="fa-solid fa-user-shield"></i>
                 <span>Gán quyền giáo viên</span>
@@ -60,9 +57,8 @@
 
         <li class="nav-item">
             <router-link
-                class="nav-link text-white"
+                class="nav-link"
                 to="/admin/flashcards"
-                active-class="bg-primary"
             >
                 <i class="fa-solid fa-layer-group"></i>
                 <span>Kiểm duyệt flashcard</span>
@@ -75,9 +71,8 @@
 
         <li class="nav-item">
             <router-link
-                class="nav-link text-white"
+                class="nav-link"
                 to="/admin/statistics"
-                active-class="bg-primary"
             >
                 <i class="fa-solid fa-chart-line"></i>
                 <span>Phân tích sử dụng</span>
@@ -90,9 +85,8 @@
 
         <li class="nav-item">
             <router-link
-                class="nav-link text-white"
+                class="nav-link"
                 to="/admin/notifications"
-                active-class="bg-primary"
             >
                 <i class="fa-solid fa-bullhorn"></i>
                 <span>Gửi thông báo</span>
@@ -117,18 +111,23 @@ export default {
     width: 250px;
 }
 
+.nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    padding: 12px 20px;
+    transition: background 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+/* Khi hover → nhạt đi */
 .nav-link:hover {
-    background-color: #5a6268;
-    color: white !important;
+    color: rgba(255, 255, 255, 0.6) !important;
 }
 
-.router-link-active {
-    background-color: #495057 !important;
-    color: white !important;
-}
-
-.nav-link i {
-    color: white;
+/* Khi active (được chọn) → sáng đậm */
+.active-link {
+    color: #ffffff !important;
+    font-weight: 600;
 }
 
 .sidebar-heading {

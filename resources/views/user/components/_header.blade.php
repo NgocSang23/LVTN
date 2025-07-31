@@ -18,22 +18,18 @@
 
 
     <!-- Topbar Search -->
-    <form action="{{ route('user.search') }}"
-        class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search" method="get">
+    <form id="instantSearchForm" method="POST"
+        class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
         @csrf
         <div class="input-group">
-            <input name="search" type="text" class="form-control bg-light border-0 small"
-                placeholder="Học phần, sách giáo khoa, câu hỏi" aria-label="Search" aria-describedby="basic-addon2"
-                value="{{ request('search') }}">
-
+            <input name="search" id="instantSearchInput" type="text" class="form-control bg-light border-0 small"
+                placeholder="Học phần, sách giáo khoa, câu hỏi" aria-label="Search" aria-describedby="basic-addon2">
             <div class="input-group-append">
-                <button class="btn btn-primary" type="submit">
+                <button class="btn btn-primary" type="button" onclick="submitInstantSearch()">
                     <i class="fas fa-search fa-sm"></i>
                 </button>
             </div>
         </div>
-
-        <!-- Kết quả tìm kiếm AJAX -->
         <div id="search-suggestions" class="position-absolute bg-white shadow p-2 rounded w-100"
             style="z-index: 9999; display: none;"></div>
     </form>
@@ -146,7 +142,7 @@
                         <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                         Thông tin cá nhân
                     </a>
-                    <a class="dropdown-item" href="{{ route('user.history_define_essay') }}">
+                    <a class="dropdown-item" href="{{ route('user.history') }}">
                         <i class="fa-solid fa-clock-rotate-left fa-sm fa-fw mr-2 text-gray-400"></i>
                         Kết quả học tập
                     </a>
@@ -167,6 +163,30 @@
 </nav>
 
 <script>
+    function submitInstantSearch() {
+        const keyword = document.getElementById('instantSearchInput').value.trim();
+        if (!keyword) return;
+
+        fetch("{{ route('search.instant') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({
+                    search: keyword
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('searchResults').innerHTML = data.html;
+            })
+            .catch(() => {
+                document.getElementById('searchResults').innerHTML =
+                    '<p class="text-danger">Có lỗi xảy ra khi tìm kiếm.</p>';
+            });
+    }
+
     function fetchNotifications() {
         fetch('/api/notifications/latest')
             .then(res => res.json())

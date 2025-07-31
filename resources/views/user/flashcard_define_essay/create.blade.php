@@ -52,16 +52,6 @@
                 </div>
             </div>
 
-            <div class="mb-4 d-flex justify-content-center gap-4">
-                <label class="d-flex align-items-center gap-2">
-                    <input type="radio" name="question_type" value="definition" checked> <span>Khái niệm / Định
-                        nghĩa</span>
-                </label>
-                <label class="d-flex align-items-center gap-2">
-                    <input type="radio" name="question_type" value="essay"> <span>Tự luận</span>
-                </label>
-            </div>
-
             <hr class="mb-4">
 
             <!-- Ô nhập số lượng thẻ -->

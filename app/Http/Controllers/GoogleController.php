@@ -22,21 +22,33 @@ class GoogleController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
 
-            // Tìm user theo email hoặc tạo mới
-            $user = User::updateOrCreate([
-                'email' => $googleUser->getEmail(),
-            ], [
-                'name' => $googleUser->getName(),
-                'platform_id' => $googleUser->getId(),
-                'image' => $googleUser->getAvatar(),
-            ]);
+            // Tìm user theo email
+            $user = User::where('email', $googleUser->getEmail())->first();
+
+            if (!$user) {
+                // Nếu chưa có user, tạo mới và gán role mặc định là student
+                $user = User::create([
+                    'name' => $googleUser->getName(),
+                    'email' => $googleUser->getEmail(),
+                    'platform_id' => $googleUser->getId(),
+                    'image' => $googleUser->getAvatar(),
+                    'roles' => 'student', // Gán mặc định
+                ]);
+            } else {
+                // Nếu đã tồn tại, cập nhật thông tin mới nhất (trừ role)
+                $user->update([
+                    'name' => $googleUser->getName(),
+                    'platform_id' => $googleUser->getId(),
+                    'image' => $googleUser->getAvatar(),
+                ]);
+            }
 
             // Đăng nhập user
             Auth::guard('web')->login($user);
 
-            // Chuyển hướng về trang trước đó hoặc trang chủ
             return redirect()->intended('/')->with('success', 'Đăng nhập Google thành công!');
         } catch (\Exception $e) {
+            Log::error('Google Login Error: ' . $e->getMessage());
             return redirect()->route('user.login')->with('error', 'Đăng nhập Google thất bại!');
         }
     }

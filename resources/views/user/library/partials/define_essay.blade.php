@@ -2,6 +2,14 @@
     <h2 class="h4 mb-4">📘 Khái niệm / định nghĩa</h2>
     <div class="row g-4">
         @forelse ($card_defines as $card_define)
+            @php
+                $cardIds = is_array($card_define['card_ids'])
+                    ? $card_define['card_ids']
+                    : explode(',', $card_define['card_ids']);
+
+                $cardIdsString = implode(',', $cardIds);
+                $encodedIds = base64_encode($cardIdsString);
+            @endphp
             <div class="col-12 col-sm-6 col-lg-4">
                 <div class="position-relative">
                     <!-- Dropdown chia sẻ -->
@@ -12,29 +20,29 @@
                             <li class="dropdown-header text-muted">Chia sẻ</li>
                             <li>
                                 <a class="dropdown-item" href="#"
-                                    onclick="event.preventDefault(); copyToClipboard('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">📋
+                                    onclick="event.preventDefault(); copyToClipboard('{{ route('user.flashcard_define_essay', ['ids' => $cardIdsString]) }}')">📋
                                     Sao chép liên kết</a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="#"
-                                    onclick="event.preventDefault(); showQrModal('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">🌐
+                                    onclick="event.preventDefault(); showQrModal('{{ route('user.flashcard_define_essay', ['ids' => $cardIdsString]) }}')">🌐
                                     Tạo mã QR</a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="#"
-                                    onclick="event.preventDefault(); shareFacebook('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">📤
+                                    onclick="event.preventDefault(); shareFacebook('{{ route('user.flashcard_define_essay', ['ids' => $cardIdsString]) }}')">📤
                                     Chia sẻ Facebook</a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="#"
-                                    onclick="event.preventDefault(); shareZalo('{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}')">💬
+                                    onclick="event.preventDefault(); shareZalo('{{ route('user.flashcard_define_essay', ['ids' => $cardIdsString]) }}')">💬
                                     Chia sẻ Zalo</a>
                             </li>
 
                             @if (empty($card_define['first_card']->flashcardSet?->slug))
                                 <form method="POST" action="{{ route('flashcard.share.create') }}" class="px-2">
                                     @csrf
-                                    @foreach (explode(',', $card_define['card_ids']) as $id)
+                                    @foreach ($cardIds as $id)
                                         <input type="hidden" name="card_ids[]" value="{{ $id }}">
                                     @endforeach
                                     <button type="submit" class="dropdown-item text-primary w-100 text-start">
@@ -52,7 +60,7 @@
                     </div>
 
                     <!-- Nội dung thẻ -->
-                    <a href="{{ route('user.flashcard_define_essay', ['ids' => implode(',', (array) $card_define['card_ids'])]) }}"
+                    <a href="{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}"
                         class="text-decoration-none text-dark">
                         <div class="card h-100 p-3 shadow-sm border-0 rounded-4 card-3d" style="overflow: visible;">
                             <div class="d-flex align-items-center">
@@ -64,7 +72,7 @@
                                         {{ optional($card_define['first_card']->question->topic)->title ?? 'Không có chủ đề' }}
                                     </h5>
                                     <small class="text-muted d-block">
-                                        📄 Số thẻ: {{ count(explode(',', $card_define['card_ids'])) }}
+                                        📄 Số thẻ: {{ count($cardIds) }}
                                     </small>
                                     <small class="text-muted d-block">
                                         👤 Tác giả: {{ $card_define['first_card']->user->name ?? 'Ẩn danh' }}

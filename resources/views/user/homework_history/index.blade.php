@@ -1,9 +1,8 @@
 @extends('user.master')
 
-@section('title', 'Thư viện')
+@section('title', 'Kết quả học tập')
 
 @section('content')
-
     <style>
         .card-3d {
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -18,24 +17,24 @@
     </style>
 
     @php
-        $activeTab = request('tab', 'define_essay'); // Mặc định là khái niệm
+        $activeTab = request('tab', 'define');
     @endphp
 
     <div class="container py-4">
-        <h1 class="mb-4">Thư viện của bạn</h1>
+        <h1 class="mb-4">📊 Kết quả học tập của bạn</h1>
 
         <!-- Tabs -->
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
-                <a class="nav-link {{ $activeTab === 'define_essay' ? 'active' : '' }}"
-                    href="{{ route('user.library', ['tab' => 'define_essay']) }}">
-                    Các khái niệm
+                <a class="nav-link {{ $activeTab === 'define' ? 'active' : '' }}"
+                    href="{{ route('user.history', ['tab' => 'define']) }}">
+                    Các khái niệm đã học
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link {{ $activeTab === 'multiple' ? 'active' : '' }}"
-                    href="{{ route('user.library', ['tab' => 'multiple']) }}">
-                    Các bài kiểm tra
+                    href="{{ route('user.history', ['tab' => 'multiple']) }}">
+                    Các bài kiểm tra đã làm
                 </a>
             </li>
         </ul>
@@ -54,13 +53,10 @@
             </div>
         </form>
 
-        @if ($activeTab === 'define_essay')
-            @include('user.library.partials.define_essay', ['card_defines' => $card_defines])
+        @if ($activeTab === 'define')
+            @include('user.homework_history.partials.define', ['define_data' => $define_data])
         @elseif ($activeTab === 'multiple')
-            @include('user.library.partials.multiple', [
-                'tests' => $tests,
-                'myClassrooms' => $myClassrooms,
-            ])
+            @include('user.homework_history.partials.multiple', ['multiple_data' => $multiple_data])
         @endif
     </div>
 @endsection

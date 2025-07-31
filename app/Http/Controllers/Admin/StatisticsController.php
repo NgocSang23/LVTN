@@ -55,7 +55,6 @@ class StatisticsController extends Controller
         ]);
     }
 
-
     public function reviewFrequency()
     {
         // Tạo danh sách 7 ngày gần nhất (kể từ hôm nay lùi về quá khứ)

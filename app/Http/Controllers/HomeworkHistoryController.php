@@ -9,11 +9,29 @@ use Illuminate\Support\Facades\DB;
 
 class HomeworkHistoryController extends Controller
 {
-    public function defineEssay()
+    public function index(Request $request)
     {
-        $userId = Auth::guard('web')->user()->id;
+        $tab = $request->get('tab', 'define');
+        $data = [];
 
-        $define_data = DB::table('answer_users as au')
+        switch ($tab) {
+            case 'define':
+                $data['define_data'] = $this->getDefineData();
+                break;
+            case 'multiple':
+                $data['multiple_data'] = $this->getMultipleData();
+                break;
+        }
+
+        return view('user.homework_history.index', array_merge($data, ['tab' => $tab]));
+    }
+
+    private function getDefineData()
+    {
+        $userId = Auth::id();
+        $sort = request('sort', 'new');
+
+        $query = DB::table('answer_users as au')
             ->join('users as u', 'au.user_id', '=', 'u.id')
             ->join('questions as q', 'au.question_id', '=', 'q.id')
             ->join('topics as t', 'q.topic_id', '=', 't.id')
@@ -27,12 +45,16 @@ class HomeworkHistoryController extends Controller
                 'u_name.name as nguoi_tao',
                 DB::raw('COUNT(DISTINCT au.question_id) as tong_so_the_da_hoc'),
                 DB::raw('MIN(c.id) as first_card_id'),
-                DB::raw("GROUP_CONCAT(DISTINCT c.id ORDER BY c.id ASC SEPARATOR ',') as card_ids")
+                DB::raw("GROUP_CONCAT(DISTINCT c.id ORDER BY c.id ASC SEPARATOR ',') as card_ids"),
+                DB::raw('MIN(c.created_at) as created_at')
             )
             ->where('u.id', $userId)
             ->where('q.type', 'definition')
-            ->groupBy('t.id', 't.title', 's.name', 'u_name.name')
-            ->get();
+            ->groupBy('t.id', 't.title', 's.name', 'u_name.name');
+
+        $query->orderBy('created_at', $sort === 'old' ? 'asc' : 'desc');
+
+        $define_data = $query->get();
 
         foreach ($define_data as $item) {
             $item->tong_so_the = DB::table('cards as c')
@@ -43,39 +65,30 @@ class HomeworkHistoryController extends Controller
                 ->count('c.id');
         }
 
-        $essay_data = DB::table('answer_users as au')
-            ->join('users as u', 'au.user_id', '=', 'u.id')
-            ->join('questions as q', 'au.question_id', '=', 'q.id')
-            ->join('topics as t', 'q.topic_id', '=', 't.id')
-            ->join('subjects as s', 't.subject_id', '=', 's.id')
-            ->join('cards as c', 'q.card_id', '=', 'c.id')
-            ->join('users as u_name', 'c.user_id', '=', 'u_name.id')
-            ->select(
-                't.id as topic_id',
-                't.title as ten_chu_de',
-                's.name as ten_mon_hoc',
-                'u_name.name as nguoi_tao',
-                DB::raw('COUNT(DISTINCT au.question_id) as tong_so_the_da_hoc'),
-                DB::raw('MIN(c.id) as first_card_id'),
-                DB::raw("GROUP_CONCAT(DISTINCT c.id ORDER BY c.id ASC SEPARATOR ',') as card_ids")
-            )
-            ->where('u.id', $userId)
-            ->where('q.type', 'essay')
-            ->groupBy('t.id', 't.title', 's.name', 'u_name.name')
-            ->get();
-
-        foreach ($essay_data as $item) {
-            $item->tong_so_the = DB::table('cards as c')
-                ->join('questions as q', 'c.id', '=', 'q.card_id')
-                ->where('q.topic_id', $item->topic_id)
-                ->where('q.type', 'essay')
-                ->distinct('c.id')
-                ->count('c.id');
-        }
-
-        return view('user.homework_history.define_essay', compact('define_data', 'essay_data'));
+        return $define_data;
     }
 
+    private function getMultipleData()
+    {
+        $sort = request('sort', 'new');
+
+        return DB::table('histories as h')
+            ->join('tests as t', 'h.test_id', '=', 't.id')
+            ->join('users as u', 't.user_id', '=', 'u.id')
+            ->select(
+                't.id as id_de_thi',
+                'h.correct_count as so_cau_dung',
+                'h.total_questions as tong_so_cau',
+                'h.score as diem',
+                'h.time_spent as thoi_gian',
+                't.content as ten_de_thi',
+                'u.name as nguoi_tao',
+                'h.created_at'
+            )
+            ->where('h.user_id', Auth::id())
+            ->orderBy('h.created_at', $sort === 'old' ? 'asc' : 'desc')
+            ->get();
+    }
 
     public function saveHistory(Request $request)
     {
@@ -88,51 +101,55 @@ class HomeworkHistoryController extends Controller
             'user_id' => 'required|integer',
         ]);
 
-        History::create($validated);
+        $history = History::updateOrCreate(
+            [
+                'test_id' => $validated['test_id'],
+                'user_id' => $validated['user_id']
+            ],
+            [
+                'correct_count' => $validated['correct_count'],
+                'total_questions' => $validated['total_questions'],
+                'score' => $validated['score'],
+                'time_spent' => $validated['time_spent'],
+            ]
+        );
 
         return response()->json([
             'message' => 'Lưu lịch sử thành công!',
-            'data' => $validated
+            'data' => $history
         ]);
     }
 
     public function multipleChoice()
     {
-        $multiple_data = DB::table('histories as h')
-            ->join('tests as t', 'h.test_id', '=', 't.id')
-            ->join('users as u', 't.user_id', '=', 'u.id')
-            ->select(
-                't.id as id_de_thi',
-                'h.correct_count as so_cau_dung',
-                'h.total_questions as tong_so_cau',
-                'h.score as diem',
-                'h.time_spent as thoi_gian',
-                't.content as ten_de_thi',
-                'u.name as nguoi_tao'
-            )
-            ->where('h.user_id', Auth::guard('web')->user()->id)
-            ->get();
-        return view('user.homework_history.multiple', compact('multiple_data'));
+        $multiple_data = $this->getMultipleData();
+        return view('user.homework_history.partials.multiple', compact('multiple_data'));
     }
 
     public function detailMultipleChoice($test_id)
     {
-        $userId = Auth::id();
-
         $test = DB::table('tests')->where('id', $test_id)->first();
+
         $history = DB::table('histories')
-            ->where('user_id', $userId)
+            ->where('user_id', Auth::id())
             ->where('test_id', $test_id)
             ->first();
 
-        $questions = DB::table('multiple_questions as q')
-            ->join('test_results as r', 'q.id', '=', 'r.multiple_question_id')
+        $questions = DB::table('test__multiple_questions as tq')
+            ->join('multiple_questions as q', 'tq.multiplequestion_id', '=', 'q.id')
+            ->join('test_results as r', 'q.id', '=', 'r.multiplequestion_id')
             ->join('options as o', 'r.option_id', '=', 'o.id')
-            ->where('q.test_id', $test_id)
-            ->select('q.id as question_id', 'q.content as question', 'o.content as option', 'r.answer', 'o.id as option_id')
+            ->where('tq.test_id', $test_id)
+            ->select(
+                'q.id as question_id',
+                'q.content as question',
+                'o.content as option',
+                'r.answer',
+                'o.id as option_id'
+            )
             ->get()
             ->groupBy('question_id');
 
-        return view('user.homework_history.multiple_detail', compact('test', 'history', 'questions'));
+        return view('user.homework_history.history_multiple_choice_detail', compact('test', 'history', 'questions'));
     }
 }

@@ -129,26 +129,6 @@
                         class="dropdown-menu dropdown-menu-end"
                     >
                         <li>
-                            <router-link class="dropdown-item" to="/profile">
-                                <i
-                                    class="fas fa-user fa-sm fa-fw me-2 text-gray-400"
-                                ></i>
-                                Thông tin cá nhân
-                            </router-link>
-                        </li>
-                        <li>
-                            <router-link
-                                class="dropdown-item"
-                                to="/admin/settings"
-                            >
-                                <i
-                                    class="fa-solid fa-cog fa-sm fa-fw me-2 text-gray-400"
-                                ></i>
-                                Cài đặt quản trị
-                            </router-link>
-                        </li>
-                        <li><hr class="dropdown-divider" /></li>
-                        <li>
                             <a
                                 class="dropdown-item"
                                 href="#"
