@@ -290,6 +290,61 @@
                     }
                 }
             });
+
+            document.querySelector('select[name="subject_id"]').addEventListener("change", async function() {
+                const subjectId = this.value;
+                const subjectName = this.options[this.selectedIndex].text;
+                const numberOfCards = parseInt(document.getElementById("number-of-cards").value || 3);
+
+                try {
+                    const res = await fetch("user/ai/suggest-topic", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')
+                                .content
+                        },
+                        body: JSON.stringify({
+                            subject_name: subjectName,
+                            count: numberOfCards
+                        })
+                    });
+
+                    const data = await res.json();
+
+                    if (data.error) {
+                        showErrorModal(data.error);
+                        return;
+                    }
+
+                    // Xoá thẻ cũ
+                    flashcardContent.innerHTML = "";
+
+                    // Gắn dữ liệu AI vào các thẻ mới
+                    data.data.forEach((item, idx) => {
+                        const card = createFlashcardCard(idx + 1);
+
+                        card.querySelector('input[name="question_content[]"]').value = item
+                            .question || '';
+                        card.querySelector('input[name="answer_content[]"]').value = item
+                            .answer || '';
+
+                        if (item.image_url) {
+                            const imgPreview = card.querySelector(".image-preview");
+                            const previewContainer = card.querySelector(".preview-container");
+
+                            imgPreview.src = item.image_url;
+                            imgPreview.classList.remove("d-none");
+                            previewContainer.classList.remove("d-none");
+                        }
+
+                        flashcardContent.appendChild(card);
+                    });
+                } catch (err) {
+                    showErrorModal("Không thể lấy dữ liệu gợi ý từ AI.");
+                    console.error(err);
+                }
+            });
         });
     </script>
 @endsection

@@ -74,26 +74,19 @@
 
     <li class="nav-item {{ request()->routeIs('flashcard_define_essay.create') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('flashcard_define_essay.create') }}">
-            <i class="fas fa-fw fa-cog"></i>
-            <span>Khái niệm / Tự luận</span>
+            <i class="fas fa-book-open"></i> {{-- ✏️ Khái niệm / Tự luận --}}
+            <span>Tạo thẻ mới</span>
         </a>
     </li>
 
     @can('teacher')
         <li class="nav-item {{ request()->routeIs('flashcard_multiple_choice.create') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('flashcard_multiple_choice.create') }}">
-                <i class="fas fa-fw fa-cog"></i>
-                <span>Trắc nghiệm</span>
+                <i class="fas fa-check-circle"></i> {{-- ✅ Trắc nghiệm --}}
+                <span>Tạo bài kiểm tra</span>
             </a>
         </li>
     @endcan
-
-    <li class="nav-item">
-        <a class="nav-link" href="#">
-            <i class="fas fa-fw fa-wrench"></i>
-            <span>Lời giải chuyên gia</span>
-        </a>
-    </li>
 
     <div class="text-center d-none d-md-inline">
         <button class="rounded-circle border-0" id="sidebarToggle"></button>

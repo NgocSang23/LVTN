@@ -143,4 +143,10 @@ class User extends Authenticatable
     {
         return $this->attributes['roles'];
     }
+
+    public function classrooms()
+    {
+        return $this->belongsToMany(ClassRoom::class, 'classroom_users', 'user_id', 'classroom_id')
+            ->withTimestamps();
+    }
 }

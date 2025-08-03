@@ -38,7 +38,7 @@
                                 </a>
                             </li>
 
-                            <li>
+                            {{-- <li>
                                 <a class="dropdown-item w-100 text-start" href="#"
                                     onclick="shareFacebook('{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}')">
                                     📤 Chia sẻ Facebook
@@ -50,7 +50,7 @@
                                     onclick="shareZalo('{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}')">
                                     💬 Chia sẻ Zalo
                                 </a>
-                            </li>
+                            </li> --}}
 
                             @if (empty($card_define['first_card']->flashcardSet?->slug))
                                 <li>

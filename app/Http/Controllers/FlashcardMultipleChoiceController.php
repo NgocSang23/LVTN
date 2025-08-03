@@ -152,7 +152,30 @@ class FlashcardMultipleChoiceController extends Controller
 
     public function show(string $id)
     {
-        $test = Test::with('user')->findOrFail($id);
+        $test = Test::with(['user', 'classrooms'])->findOrFail($id);
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+
+        if ($user->roles !== 'teacher') {
+            // Lấy lớp mà user đang học và có test này
+            $classroom = $user->classrooms()
+                ->whereHas('tests', fn($q) => $q->where('test_id', $id))
+                ->first();
+
+            if ($classroom) {
+                // ❗ Lấy deadline từ bảng classroom_tests
+                $pivot = DB::table('classroom_tests')
+                    ->where('classroom_id', $classroom->id)
+                    ->where('test_id', $id)
+                    ->first();
+
+                if ($pivot && $pivot->deadline && now()->greaterThan($pivot->deadline)) {
+                    return redirect()->route('classrooms.show', $classroom->id)
+                        ->with('error', 'Bài kiểm tra này đã hết hạn.');
+                }
+            }
+        }
+
         return view('user.flashcard_multiple_choice.show', compact('test'));
     }
 

@@ -151,22 +151,22 @@
         }
 
         // 📤 Chia sẻ Facebook: mở cửa sổ popup để chia sẻ đường link
-        function shareFacebook(link) {
-            // Tạo URL chia sẻ của Facebook, thêm tham số đường link
-            const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+        // function shareFacebook(link) {
+        //     // Tạo URL chia sẻ của Facebook, thêm tham số đường link
+        //     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
 
-            // Mở popup chia sẻ với kích thước cố định
-            window.open(url, '_blank', 'width=600,height=500');
-        }
+        //     // Mở popup chia sẻ với kích thước cố định
+        //     window.open(url, '_blank', 'width=600,height=500');
+        // }
 
-        // 💬 Chia sẻ Zalo: mở cửa sổ chia sẻ Zalo qua liên kết zalo.me
-        function shareZalo(link) {
-            // Zalo không hỗ trợ JavaScript chia sẻ trực tiếp, nên chỉ chuyển hướng sang trang zalo.me/share
-            const zaloUrl = `https://zalo.me/share?url=${encodeURIComponent(link)}`;
+        // // 💬 Chia sẻ Zalo: mở cửa sổ chia sẻ Zalo qua liên kết zalo.me
+        // function shareZalo(link) {
+        //     // Zalo không hỗ trợ JavaScript chia sẻ trực tiếp, nên chỉ chuyển hướng sang trang zalo.me/share
+        //     const zaloUrl = `https://zalo.me/share?url=${encodeURIComponent(link)}`;
 
-            // Mở cửa sổ mới để người dùng chia sẻ đường link
-            window.open(zaloUrl, '_blank');
-        }
+        //     // Mở cửa sổ mới để người dùng chia sẻ đường link
+        //     window.open(zaloUrl, '_blank');
+        // }
 
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('instantSearchForm');

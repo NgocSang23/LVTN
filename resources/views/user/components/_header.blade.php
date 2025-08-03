@@ -52,12 +52,11 @@
                 </a>
                 @can('teacher')
                     <a class="dropdown-item" href="{{ route('classrooms.create') }}">Tạo lớp học</a>
+                    <a class="dropdown-item select-option"
+                        href="{{ auth()->check() ? route('flashcard_multiple_choice.create') : route('user.login') }}"
+                        data-value="multiple_choice">Tạo bài kiểm tra
+                    </a>
                 @endcan
-                <a class="dropdown-item select-option"
-                    href="{{ auth()->check() ? route('flashcard_multiple_choice.create') : route('user.login') }}"
-                    data-value="multiple_choice">Câu hỏi trắc
-                    nghiệm
-                </a>
             </div>
         </li>
 

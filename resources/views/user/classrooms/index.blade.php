@@ -21,7 +21,7 @@
         @if ($classrooms->count())
             <div class="row g-4">
                 @foreach ($classrooms as $classroom)
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card shadow-sm border-0 h-100 position-relative" style="border-radius: 12px;">
                             <div class="card-body">
                                 <!-- Góc phải hiển thị số lượng học viên -->

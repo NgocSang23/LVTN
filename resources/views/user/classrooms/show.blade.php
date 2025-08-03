@@ -562,27 +562,32 @@
             {{-- ==== TAB: BÀI TẬP GIAO ==== --}}
             <div class="tab-pane fade" id="assignmentTab" role="tabpanel" aria-labelledby="test-tab">
                 <h4 class="fw-semibold mb-3">📝 Bài kiểm tra trắc nghiệm</h5>
-                @if ($classroom->tests->count())
-                    <div class="row" style="max-height: 500px; overflow-y: auto;">
-                        @foreach ($classroom->tests as $test)
-                            @php
-                                // Lấy deadline từ bảng trung gian (pivot)
-                                $deadline = \Carbon\Carbon::parse($test->pivot->deadline)->format('d/m/Y H:i');
-                            @endphp
-                            <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card shadow-sm h-100 border-0" style="border-radius: 14px;">
-                                    <div class="card-body d-flex flex-column justify-content-between">
-                                        <div>
-                                            <h5 class="fw-bold text-dark">📝 {{ $test->content }}</h5>
-                                            <p class="text-muted mb-1">⏱
-                                                {{ \Carbon\Carbon::parse($test->time)->format('i') }} phút</p>
-                                            <p class="text-muted mb-1">📅 Hạn nộp: {{ $deadline }}</p>
-                                            <p class="text-muted small mb-0">👤 {{ $test->user->name ?? 'Không rõ' }}</p>
-                                        </div>
-                                        <div class="mt-3 text-end">
-                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
-                                                data-bs-target="#confirmTestModal"
-                                                onclick="showTestModal(
+                    @if ($classroom->tests->count())
+                        <div class="row" style="max-height: 500px; overflow-y: auto;">
+                            @foreach ($classroom->tests as $test)
+                                @php
+                                    // Lấy deadline và kiểm tra đã hết hạn hay chưa
+                                    $deadline = \Carbon\Carbon::parse($test->pivot->deadline);
+                                    $now = \Carbon\Carbon::now();
+                                    $isExpired = $deadline->isPast();
+                                @endphp
+
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card shadow-sm h-100 border-0" style="border-radius: 14px;">
+                                        <div class="card-body d-flex flex-column justify-content-between">
+                                            <div>
+                                                <h5 class="fw-bold text-dark">📝 {{ $test->content }}</h5>
+                                                <p class="text-muted mb-1">⏱
+                                                    {{ \Carbon\Carbon::parse($test->time)->format('i') }} phút</p>
+                                                <p class="text-muted mb-1">📅 Hạn nộp: {{ $deadline }}</p>
+                                                <p class="text-muted small mb-0">👤 {{ $test->user->name ?? 'Không rõ' }}
+                                                </p>
+                                            </div>
+                                            <div class="mt-3 text-end">
+                                                @if (!$isExpired)
+                                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                                        data-bs-target="#confirmTestModal"
+                                                        onclick="showTestModal(
                                                     '{{ $test->id }}',
                                                     '{{ $test->content }}',
                                                     '{{ \Carbon\Carbon::parse($test->time)->format('i') }}',
@@ -591,17 +596,23 @@
                                                     '{{ $test->questionNumbers->first()->question_number ?? 'Không có' }}',
                                                     '{{ route('flashcard_multiple_choice.show', $test->id) }}'
                                                 )">
-                                                <i class="fa-solid fa-eye me-1"></i> Xem chi tiết
-                                            </button>
+                                                        <i class="fa-solid fa-eye me-1"></i> Xem chi tiết
+                                                    </button>
+                                                @else
+                                                    <button class="btn btn-sm btn-secondary" disabled>
+                                                        <i class="fa-solid fa-lock me-1"></i> Đã hết hạn
+                                                    </button>
+                                                @endif
+
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="alert alert-info">Chưa có bài kiểm tra nào được chia sẻ cho lớp học.</div>
-                @endif
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="alert alert-info">Chưa có bài kiểm tra nào được chia sẻ cho lớp học.</div>
+                    @endif
             </div>
         </div>
     </div>

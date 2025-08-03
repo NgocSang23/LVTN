@@ -63,15 +63,13 @@ async function checkEssayProgress() {
         return;
     }
 
-    // Hiển thị đang kiểm tra
-    if (resultContainer) {
-        resultContainer.classList.remove(
-            "text-danger",
-            "text-success",
-            "text-warning"
-        );
-        resultContainer.innerHTML = ""; // ✅ Giờ này không còn ảnh hưởng đến loading nữa
-    }
+    // Reset UI
+    resultContainer.classList.remove(
+        "text-danger",
+        "text-success",
+        "text-warning"
+    );
+    resultContainer.innerHTML = "";
     if (loadingElem) loadingElem.classList.remove("d-none");
 
     try {
@@ -91,19 +89,10 @@ async function checkEssayProgress() {
         console.log("📥 Phản hồi từ AI (thô):", rawResponse);
 
         let data = null;
-
         try {
-            // Nếu là JSON thì parse bình thường
             if (isJson(rawResponse)) {
                 data = JSON.parse(rawResponse);
-
-                // Nếu bên trong lại có response là JSON string nữa
-                data.response = isJson(data.response)
-                    ? JSON.parse(data.response)
-                    : data.response;
-                data.feedback = isJson(data.feedback)
-                    ? JSON.parse(data.feedback)
-                    : data.feedback;
+                if (isJson(data.response)) data = JSON.parse(data.response); // hỗ trợ trường hợp bọc thêm JSON
             } else {
                 throw new Error("Phản hồi không phải JSON");
             }
@@ -114,54 +103,43 @@ async function checkEssayProgress() {
             return;
         }
 
-        // Ẩn loading
         if (loadingElem) loadingElem.classList.add("d-none");
 
-        if (!data || !data.type || !data.feedback) {
+        // Kiểm tra dữ liệu hợp lệ
+        if (
+            !data ||
+            typeof data.feedback !== "string" ||
+            typeof data.category !== "string"
+        ) {
             resultContainer.innerHTML =
                 "<p class='text-danger fw-bold'>Lỗi phản hồi từ AI (thiếu thông tin).</p>";
             return;
         }
 
-        // Xử lý toán học
-        if (data.type.includes("math") && typeof data.percent === "number") {
-            const percent = Math.max(0, Math.min(100, data.percent));
-            if (percentBar) {
-                percentBar.style.width = percent + "%";
-                percentBar.setAttribute("aria-valuenow", percent);
-                percentBar.textContent = percent + "%";
-                percentBar.classList.remove("d-none");
-            }
-            resultContainer.innerHTML = `<p class='fw-bold text-center'>Mức độ chính xác: ${percent}%</p>`;
+        // Phân loại hiển thị
+        let categoryClass = "text-warning";
+        if (data.category.toLowerCase().includes("chính xác"))
+            categoryClass = "text-success";
+        if (data.category.toLowerCase().includes("sai"))
+            categoryClass = "text-danger";
+
+        const percent = typeof data.percent === "number" ? data.percent : 0;
+        if (percentBar) {
+            percentBar.style.width = percent + "%";
+            percentBar.setAttribute("aria-valuenow", percent);
+            percentBar.textContent = percent + "%";
+            percentBar.classList.remove("d-none");
         }
 
-        // Xử lý lý thuyết
-        else if (data.type.includes("theory")) {
-            let categoryClass = "text-warning";
-            if (data.category?.toLowerCase().includes("chính xác"))
-                categoryClass = "text-success";
-            if (data.category?.toLowerCase().includes("sai"))
-                categoryClass = "text-danger";
-
-            const percent =
-                typeof data.percent === "number"
-                    ? data.percent
-                    : data.category?.toLowerCase().includes("chính xác")
-                    ? 100
-                    : 0;
-
-            if (percentBar) {
-                percentBar.style.width = percent + "%";
-                percentBar.setAttribute("aria-valuenow", percent);
-                percentBar.textContent = percent + "%";
-                percentBar.classList.remove("d-none");
+        resultContainer.innerHTML = `
+            <p class='fw-bold ${categoryClass}'>Đánh giá: ${data.category}</p>
+            <p>${data.feedback}</p>
+            ${
+                data.correct_answer
+                    ? `<p class="text-muted fst-italic">Đáp án đúng: ${data.correct_answer}</p>`
+                    : ""
             }
-
-            resultContainer.innerHTML = `
-                <p class='fw-bold ${categoryClass}'>Đánh giá: ${data.category}</p>
-                <p>${data.feedback}</p>
-            `;
-        }
+        `;
     } catch (error) {
         console.error("❌ Lỗi kết nối:", error);
         if (loadingElem) loadingElem.classList.add("d-none");

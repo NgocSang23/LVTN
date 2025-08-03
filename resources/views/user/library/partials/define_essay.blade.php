@@ -28,7 +28,7 @@
                                     onclick="event.preventDefault(); showQrModal('{{ route('user.flashcard_define_essay', ['ids' => $cardIdsString]) }}')">🌐
                                     Tạo mã QR</a>
                             </li>
-                            <li>
+                            {{-- <li>
                                 <a class="dropdown-item" href="#"
                                     onclick="event.preventDefault(); shareFacebook('{{ route('user.flashcard_define_essay', ['ids' => $cardIdsString]) }}')">📤
                                     Chia sẻ Facebook</a>
@@ -37,7 +37,7 @@
                                 <a class="dropdown-item" href="#"
                                     onclick="event.preventDefault(); shareZalo('{{ route('user.flashcard_define_essay', ['ids' => $cardIdsString]) }}')">💬
                                     Chia sẻ Zalo</a>
-                            </li>
+                            </li> --}}
 
                             @if (empty($card_define['first_card']->flashcardSet?->slug))
                                 <form method="POST" action="{{ route('flashcard.share.create') }}" class="px-2">
@@ -139,15 +139,15 @@
         qrModal.show();
     }
 
-    function shareFacebook(link) {
-        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
-        window.open(url, '_blank', 'width=600,height=500');
-    }
+    // function shareFacebook(link) {
+    //     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+    //     window.open(url, '_blank', 'width=600,height=500');
+    // }
 
-    function shareZalo(link) {
-        const zaloUrl = `https://zalo.me/share?url=${encodeURIComponent(link)}`;
-        window.open(zaloUrl, '_blank');
-    }
+    // function shareZalo(link) {
+    //     const zaloUrl = `https://zalo.me/share?url=${encodeURIComponent(link)}`;
+    //     window.open(zaloUrl, '_blank');
+    // }
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
