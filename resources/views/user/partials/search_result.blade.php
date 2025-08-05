@@ -4,9 +4,16 @@
     <div class="row g-4 position-relative" style="z-index: 1;">
         @forelse ($card_defines as $card_define)
             @php
-                $cardIdsArray = is_array($card_define['card_ids'])
-                    ? $card_define['card_ids']
-                    : explode(',', $card_define['card_ids']);
+                $rawCardIds = $card_define['card_ids'] ?? [];
+
+                if (!is_array($rawCardIds)) {
+                    $rawCardIds = explode(',', (string) $rawCardIds);
+                }
+
+                // Đảm bảo mảng không bị null
+                $cardIdsArray = array_filter($rawCardIds, fn($id) => !empty($id));
+
+                $cardCount = count($cardIdsArray);
                 $encodedIds = base64_encode(implode(',', $cardIdsArray));
             @endphp
 
@@ -86,8 +93,8 @@
                                 <h5 class="mb-1 fw-semibold text-truncate">
                                     {{ optional($card_define['first_card']->question->topic)->title ?? 'Không có chủ đề' }}
                                 </h5>
-                                <small class="text-muted d-block">📄 Số thẻ:
-                                    {{ count($cardIdsArray) }}</small>
+                                <small class="text-muted d-block">📄 Số thẻ: {{ $cardCount }}</small>
+
                                 <small class="text-muted d-block">👤 Tác giả:
                                     {{ $card_define['first_card']->user->name ?? 'Ẩn danh' }}</small>
                                 <small class="text-muted d-block">📅 Ngày tạo:
@@ -112,7 +119,7 @@
             <div class="col-12 col-sm-6 col-lg-4">
                 <div class="position-relative">
                     <!-- Nếu là giáo viên -->
-                    @if (auth()->check() && auth()->user()->roles === 'teacher' && count($myClassrooms) > 0)
+                    @if (auth()->check() && auth()->user()->roles === 'teacher' && $myClassrooms->isNotEmpty())
                         <div class="dropdown position-absolute top-0 end-0 p-3" style="z-index: 1;">
                             <span data-bs-toggle="dropdown" role="button"
                                 style="cursor: pointer; font-size: 20px; line-height: 1;">
@@ -165,7 +172,7 @@
         @endforelse
 
         @foreach ($tests as $test)
-            @if (auth()->check() && auth()->user()->roles === 'teacher' && count($myClassrooms) > 0)
+            @if (auth()->check() && auth()->user()->roles === 'teacher' && $myClassrooms->isNotEmpty())
                 <div class="modal fade" id="assignModal_{{ $test->id }}" tabindex="-1"
                     aria-labelledby="assignModalLabel_{{ $test->id }}" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">

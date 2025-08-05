@@ -53,7 +53,7 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::put('/profile', [UserController::class, 'update_profile'])->name('user.update_profile');
 
     // Search
-    Route::post('/search/instant', [SearchController::class, 'instant'])->name('search.instant');
+    Route::get('/search/instant', [SearchController::class, 'instant'])->name('search.instant');
 
     // Flashcard Define Essay
     Route::resource('flashcard_define_essay', FlashcardDefineEssayController::class)->except(['show']);
@@ -143,7 +143,10 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::post('/tests/assign', [ClassroomTestController::class, 'assign'])->name('teacher.assignTest');
 
     // AI Suggestion
-    Route::post('/ai/suggest-topic', [AiSuggestionController::class, 'suggest']);
+    Route::prefix('ai')->group(function () {
+        Route::post('/suggest', [AiSuggestionController::class, 'suggest'])->name('ai.suggest');
+        Route::post('/suggest-topics', [AiSuggestionController::class, 'suggestTopics'])->name('ai.suggestTopics');
+    });
 });
 
 // ========== ADMIN ROUTES ==========

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Card;
+use App\Models\ClassRoom;
+use App\Models\FlashcardSet;
 use App\Models\Test;
 use App\Models\Topic;
 use Illuminate\Http\Request;
@@ -16,28 +18,96 @@ class SearchController extends Controller
      */
     public function instant(Request $request)
     {
-        $keyword = mb_strtolower(trim($request->input('search')));
+        Log::info('🔍 Keyword:', ['value' => $request->input('search')]);
 
-        if (empty($keyword)) {
-            return response()->json(['html' => '<p class="text-muted">Vui lòng nhập từ khóa.</p>']);
+        try {
+
+            /** @var \App\Models\User $user */
+            $user = auth()->user();
+            $myClassrooms = [];
+
+            if ($user && $user->roles === 'teacher') {
+                $myClassrooms = ClassRoom::where('teacher_id', $user->id)->get();
+            }
+
+            $keyword = mb_strtolower(trim($request->input('search')));
+
+            if (empty($keyword)) {
+                Log::info('✅ Tìm kiếm rỗng, chạy dashboard');
+                $data = $this->getDashboardData($myClassrooms);
+                return response()->json(['html' => view('user.partials.search_result', $data)->render()]);
+            }
+
+            $topicMatches = \App\Models\Topic::where('title', 'LIKE', "%$keyword%")->pluck('id')->toArray();
+            $subjectMatches = \App\Models\Subject::where('name', 'LIKE', "%$keyword%")->get();
+            $subjectTopicIds = $subjectMatches->flatMap(fn($s) => $s->topics->pluck('id'))->toArray();
+            $relatedTopicIds = array_unique(array_merge($topicMatches, $subjectTopicIds));
+
+            if (empty($relatedTopicIds)) {
+                return response()->json(['html' => '<p class="text-muted">Không tìm thấy kết quả phù hợp.</p>']);
+            }
+
+            $card_defines = $this->getCardsByType($relatedTopicIds);
+            $tests = Test::with(['questionNumbers.topic', 'user'])
+                ->whereHas('questionNumbers.topic', fn($q) => $q->whereIn('id', $relatedTopicIds))
+                ->get();
+
+            $html = view('user.partials.search_result', compact('card_defines', 'tests', 'myClassrooms'))->render();
+
+            return response()->json(['html' => $html]);
+        } catch (\Throwable $e) {
+            Log::error('❌ Lỗi tìm kiếm: ' . $e->getMessage(), [
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json(['html' => '<p class="text-danger">Đã xảy ra lỗi trong quá trình tìm kiếm.</p>']);
         }
+    }
 
-        $topicMatches = \App\Models\Topic::where('title', 'LIKE', "%$keyword%")->pluck('id')->toArray();
-        $subjectMatches = \App\Models\Subject::where('name', 'LIKE', "%$keyword%")->get();
-        $subjectTopicIds = $subjectMatches->flatMap(fn($s) => $s->topics->pluck('id'))->toArray();
-        $relatedTopicIds = array_unique(array_merge($topicMatches, $subjectTopicIds));
-
-        if (empty($relatedTopicIds)) {
-            return response()->json(['html' => '<p class="text-muted">Không tìm thấy kết quả phù hợp.</p>']);
-        }
-
-        $card_defines = $this->getCardsByType('definition', $relatedTopicIds);
-        $tests = Test::with(['questionNumbers.topic', 'user'])
-            ->whereHas('questionNumbers.topic', fn($q) => $q->whereIn('id', $relatedTopicIds))
+    protected function getCardsByType(array $topicIds)
+    {
+        $cards = \App\Models\Card::with(['question.topic', 'user', 'flashcardSet'])
+            ->whereHas('question.topic', fn($q) => $q->whereIn('id', $topicIds))
             ->get();
 
-        $html = view('user.partials.search_result', compact('card_defines', 'tests'))->render();
+        return $cards->groupBy(fn($card) => optional($card->question->topic)->id)
+            ->map(function ($group) {
+                $ids = $group->pluck('id')->toArray();
+                return [
+                    'card_ids' => $ids,
+                    'encoded_ids' => base64_encode(implode(',', $ids)), // 🔧 Thêm dòng này
+                    'first_card' => $group->first()
+                ];
+            })
+            ->values();
+    }
 
-        return response()->json(['html' => $html]);
+    private function getDashboardData($myClassrooms)
+    {
+        $public_card_ids = FlashcardSet::where('is_public', 1)
+            ->pluck('question_ids')
+            ->flatMap(fn($ids) => explode(',', $ids))
+            ->map(fn($id) => (int) trim($id))
+            ->unique()
+            ->toArray();
+
+        $card_defines = Card::with(['question.topic.subject', 'user'])
+            ->latest()
+            ->get()
+            ->filter(fn($card) => $card->question && $card->question->topic)
+            ->filter(fn($card) => in_array($card->id, $public_card_ids))
+            ->groupBy(fn($card) => $card->question->topic->id)
+            ->map(fn($group) => [
+                'first_card' => $group->first(),
+                'card_ids' => $group->pluck('id')->implode(','),
+                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')),
+            ])
+            ->take(6);
+
+        $tests = Test::with(['questionnumbers.topic', 'user'])->latest()->take(6)->get();
+
+        return compact('card_defines', 'tests', 'myClassrooms');
     }
 }

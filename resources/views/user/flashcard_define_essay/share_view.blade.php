@@ -17,14 +17,14 @@
             <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#qrModal">
                 <i class="fas fa-qrcode"></i> Mã QR chia sẻ
             </button>
-
+{{--
             <button class="btn btn-outline-primary" id="fbShareBtn">
                 <i class="fab fa-facebook"></i> Chia sẻ Facebook
             </button>
 
             <button class="btn btn-outline-info" id="zaloShareBtn">
                 <i class="fas fa-comment-alt"></i> Chia sẻ Zalo
-            </button>
+            </button> --}}
 
             @if (count(explode(',', $set->question_ids)) > 4)
                 <a href="{{ route('game.study', base64_encode($set->question_ids)) }}" class="btn btn-success">
@@ -103,17 +103,17 @@
                 });
             }
 
-            // Chia sẻ Facebook
-            document.getElementById("fbShareBtn")?.addEventListener("click", function() {
-                const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fullUrl)}`;
-                window.open(fbUrl, '_blank', 'width=600,height=500');
-            });
+            // // Chia sẻ Facebook
+            // document.getElementById("fbShareBtn")?.addEventListener("click", function() {
+            //     const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(fullUrl)}`;
+            //     window.open(fbUrl, '_blank', 'width=600,height=500');
+            // });
 
-            // Chia sẻ Zalo
-            document.getElementById("zaloShareBtn")?.addEventListener("click", function() {
-                const zaloUrl = `https://zalo.me/share?url=${encodeURIComponent(fullUrl)}`;
-                window.open(zaloUrl, '_blank');
-            });
+            // // Chia sẻ Zalo
+            // document.getElementById("zaloShareBtn")?.addEventListener("click", function() {
+            //     const zaloUrl = `https://zalo.me/share?url=${encodeURIComponent(fullUrl)}`;
+            //     window.open(zaloUrl, '_blank');
+            // });
         });
     </script>
 @endsection

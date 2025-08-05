@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\AI\FlashcardSuggest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AiSuggestionController extends Controller
 {
@@ -24,6 +25,25 @@ class AiSuggestionController extends Controller
             return response()->json(['error' => $result['error']], 500);
         }
 
+        Log::info('AI result:', $result);
+
         return response()->json(['data' => $result]);
+    }
+
+    public function suggestTopics(Request $request)
+    {
+        $request->validate([
+            'subject_name' => 'required|string'
+        ]);
+
+        $subject = $request->input('subject_name');
+        $ai = new FlashcardSuggest();
+        $topics = $ai->suggestTopics($subject);
+
+        if (isset($topics['error'])) {
+            return response()->json(['error' => $topics['error']], 500);
+        }
+
+        return response()->json(['data' => $topics]);
     }
 }

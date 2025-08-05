@@ -9,12 +9,22 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\User;
 use App\Models\Card;
 use App\Models\ClassRoom;
+use App\Models\FlashcardSet;
 use App\Models\Test;
 
 class UserController extends Controller
 {
     public function dashboard(Request $request)
     {
+        // 1. Lấy danh sách các card_id nằm trong các bộ được chia sẻ công khai
+        $public_card_ids = FlashcardSet::where('is_public', 1)
+            ->pluck('question_ids')
+            ->flatMap(fn($ids) => explode(',', $ids))
+            ->map(fn($id) => (int) trim($id))
+            ->unique()
+            ->toArray();
+
+        // 2. Lọc card định nghĩa + có topic
         $card_defines = Card::with(['question.topic.subject', 'user'])
             ->whereHas('question', function ($query) {
                 $query->where('type', 'definition');
@@ -22,16 +32,21 @@ class UserController extends Controller
             ->latest()
             ->get()
             ->filter(fn($card) => $card->question && $card->question->topic)
+            // 3. Chỉ lấy những card có ID nằm trong danh sách được chia sẻ công khai
+            ->filter(fn($card) => in_array($card->id, $public_card_ids))
+            // 4. Nhóm theo topic
             ->groupBy(fn($card) => $card->question->topic->id)
             ->map(fn($group) => [
                 'first_card' => $group->first(), // Card đầu tiên hiển thị
                 'card_ids' => $group->pluck('id')->implode(','), // ID của tất cả cards cùng chủ đề
-                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')), // 👈 thêm dòng này
+                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')), // mã hoá để dùng trong link
             ])
             ->take(6);
 
+        // 5. Lấy các bài kiểm tra mới nhất
         $tests = Test::with(['questionnumbers.topic', 'user'])->latest()->get()->take(6);
 
+        // 6. Nếu là giáo viên, lấy danh sách lớp học
         $myClassrooms = [];
         if (auth()->check() && auth()->user()->roles === 'teacher') {
             $myClassrooms = ClassRoom::where('teacher_id', auth()->id())->get();
@@ -45,25 +60,13 @@ class UserController extends Controller
         $tab = $request->get('tab', 'define_essay');
 
         $card_defines = collect();
-        $card_essays = collect();
         $tests = collect();
         $myClassrooms = collect();
 
         if ($tab === 'define_essay') {
-            $card_defines = Card::with(['question.topic.subject', 'user'])
+            $card_defines = Card::with(['question.topic.subject', 'user', 'flashcardSet']) // ← thêm ở đây
                 ->where('user_id', Auth::id())
                 ->whereHas('question', fn($q) => $q->where('type', 'definition'))
-                ->latest()->get()
-                ->filter(fn($card) => $card->question && $card->question->topic)
-                ->groupBy(fn($card) => $card->question->topic->id)
-                ->map(fn($group) => [
-                    'first_card' => $group->first(),
-                    'card_ids' => $group->pluck('id')->implode(','),
-                ])->take(6);
-
-            $card_essays = Card::with(['question.topic.subject', 'user'])
-                ->where('user_id', Auth::id())
-                ->whereHas('question', fn($q) => $q->where('type', 'essay'))
                 ->latest()->get()
                 ->filter(fn($card) => $card->question && $card->question->topic)
                 ->groupBy(fn($card) => $card->question->topic->id)
@@ -85,7 +88,7 @@ class UserController extends Controller
             }
         }
 
-        return view('user.library.index', compact('tab', 'card_defines', 'card_essays', 'tests', 'myClassrooms'));
+        return view('user.library.index', compact('tab', 'card_defines', 'tests', 'myClassrooms'));
     }
 
     public function logout(Request $request)

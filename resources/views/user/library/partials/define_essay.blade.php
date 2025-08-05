@@ -39,21 +39,38 @@
                                     Chia sẻ Zalo</a>
                             </li> --}}
 
-                            @if (empty($card_define['first_card']->flashcardSet?->slug))
-                                <form method="POST" action="{{ route('flashcard.share.create') }}" class="px-2">
-                                    @csrf
-                                    @foreach ($cardIds as $id)
-                                        <input type="hidden" name="card_ids[]" value="{{ $id }}">
-                                    @endforeach
-                                    <button type="submit" class="dropdown-item text-primary w-100 text-start">
-                                        🌍 Chia sẻ công khai
-                                    </button>
-                                </form>
-                            @else
+                            @php
+                                $set = \App\Models\FlashcardSet::where('is_public', 1)
+                                    ->get()
+                                    ->first(function ($s) use ($cardIds) {
+                                        $setCardIds = explode(',', $s->question_ids);
+                                        sort($setCardIds);
+                                        $cardIdsSorted = $cardIds;
+                                        sort($cardIdsSorted);
+                                        return $setCardIds === $cardIdsSorted;
+                                    });
+                            @endphp
+
+                            @if ($set)
+                                <!-- Đã chia sẻ công khai -->
                                 <li>
                                     <a class="dropdown-item text-success"
-                                        href="{{ route('flashcard.share', ['slug' => $card_define['first_card']->flashcardSet->slug]) }}">🔗
-                                        Xem chia sẻ công khai</a>
+                                        href="{{ route('flashcard.share', ['slug' => $set->slug]) }}">
+                                        🔗 Xem chia sẻ công khai
+                                    </a>
+                                </li>
+                            @else
+                                <!-- Chưa từng chia sẻ -->
+                                <li>
+                                    <form method="POST" action="{{ route('flashcard.share.create') }}" class="px-2">
+                                        @csrf
+                                        @foreach ($cardIds as $id)
+                                            <input type="hidden" name="card_ids[]" value="{{ $id }}">
+                                        @endforeach
+                                        <button type="submit" class="dropdown-item text-primary w-100 text-start">
+                                            🌍 Chia sẻ công khai
+                                        </button>
+                                    </form>
                                 </li>
                             @endif
                         </ul>

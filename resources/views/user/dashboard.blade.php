@@ -188,6 +188,20 @@
                 });
             }
         });
+
+        function submitInstantSearch() {
+            const keyword = document.getElementById('instantSearchInput').value.trim();
+
+            fetch(`{{ route('search.instant') }}?search=${encodeURIComponent(keyword)}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('searchResults').innerHTML = data.html;
+                })
+                .catch(() => {
+                    document.getElementById('searchResults').innerHTML =
+                        '<p class="text-danger">Có lỗi xảy ra khi tìm kiếm.</p>';
+                });
+        }
     </script>
 
     {{-- Tìm kiếm --}}
