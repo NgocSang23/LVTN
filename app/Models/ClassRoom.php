@@ -76,4 +76,9 @@ class ClassRoom extends Model
             ->withTimestamps()
             ->withPivot('deadline');
     }
+
+    public function classroomUsers()
+    {
+        return $this->hasMany(ClassroomUser::class, 'classroom_id');
+    }
 }

@@ -124,6 +124,8 @@ Route::middleware('auth')->prefix('user')->group(function () {
     Route::delete('/classrooms/{id}/leave', [ClassroomController::class, 'leave'])->name('classrooms.leave');
     Route::delete('/classrooms/{classroom}/remove-student/{user}', [ClassroomController::class, 'removeStudent'])->name('classrooms.removeStudent');
     Route::get('/classrooms/{id}', [ClassroomController::class, 'show'])->name('classrooms.show');
+    Route::put('/classrooms/update/{id}', [ClassroomController::class, 'update'])->name('classrooms.update');
+    Route::delete('/classrooms/{id}', [ClassroomController::class, 'destroy'])->name('classrooms.destroy');
     Route::get('/classrooms/{id}/export-results', [ClassroomController::class, 'exportResults'])->name('classrooms.export');
 
     // Notifications

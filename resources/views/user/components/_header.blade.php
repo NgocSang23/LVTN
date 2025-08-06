@@ -23,7 +23,7 @@
         @csrf
         <div class="input-group">
             <input name="search" id="instantSearchInput" type="text" class="form-control bg-light border-0 small"
-                placeholder="Tìm kiếm theo chủ đề, môn học..." aria-label="Search" aria-describedby="basic-addon2">
+                placeholder="Tìm kiếm theo chủ đề, môn học..." aria-label="Search" aria-describedby="basic-addon2" autocomplete="off">
             <div class="input-group-append">
                 <button class="btn btn-primary" type="button" onclick="submitInstantSearch()">
                     <i class="fas fa-search fa-sm"></i>

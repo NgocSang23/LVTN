@@ -19,15 +19,17 @@ class ClassroomController extends Controller
      * 1. Hiển thị danh sách lớp học mà giáo viên đã tạo
      * - Chỉ lấy các lớp mà teacher_id = id của người đang đăng nhập
      */
-    public function index()
+    public function index(Request $request)
     {
-        // TRUY VẤN: Lấy tất cả các lớp học do giáo viên hiện tại tạo
-        // Classroom::withCount('users') : Tải số lượng người dùng (học viên) trong mỗi lớp học. 'users' ở đây là tên quan hệ trong Model ClassRoom.
-        // ->where('teacher_id', auth()->id()) : Lọc các lớp mà 'teacher_id' (ID của giáo viên tạo lớp) trùng với ID của người dùng đang đăng nhập (auth()->id()).
-        // ->get() : Thực thi truy vấn và trả về tập hợp các lớp học.
-        $classrooms = Classroom::withCount('users')->where('teacher_id', auth()->id())->get();
+        $query = Classroom::withCount('users')
+            ->where('teacher_id', auth()->id());
 
-        // Trả về view 'user.classrooms.index' và truyền dữ liệu 'classrooms' vào.
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $classrooms = $query->get();
+
         return view('user.classrooms.index', compact('classrooms'));
     }
 
@@ -73,6 +75,40 @@ class ClassroomController extends Controller
 
         // Chuyển hướng về trang danh sách lớp học với thông báo thành công.
         return redirect()->route('classrooms.index')->with('success', 'Tạo lớp học thành công!');
+    }
+
+    public function update(Request $request, $id)
+    {
+        $classroom = Classroom::findOrFail($id);
+        $classroom->update($request->only('name', 'description'));
+        return redirect()->route('classrooms.index')->with('success', 'Cập nhật thành công.');
+    }
+
+    public function destroy($id)
+    {
+        $classroom = ClassRoom::findOrFail($id);
+
+        // Lấy danh sách tất cả học viên trong lớp
+        $studentIds = $classroom->users()->pluck('users.id')->toArray();
+
+        // Gửi thông báo đến từng học viên
+        foreach ($studentIds as $studentId) {
+            Notification::create([
+                'user_id' => $studentId,
+                'title' => 'Lớp học đã bị xoá',
+                'message' => "Lớp học '{$classroom->name}' mà bạn tham gia đã bị xoá bởi giáo viên.",
+            ]);
+        }
+
+        // Xoá các bản ghi liên kết
+        $classroom->classroomUsers()->delete();         // Xoá học viên khỏi lớp
+        $classroom->sharedFlashcards()->delete();       // Xoá flashcard chia sẻ
+        $classroom->tests()->detach();                  // Xoá trong bảng pivot classroom_tests (nếu có)
+
+        // Cuối cùng xoá lớp học
+        $classroom->delete();
+
+        return redirect()->route('classrooms.index')->with('success', 'Đã xoá lớp học và thông báo đến học viên.');
     }
 
     public function show($id)
@@ -383,12 +419,18 @@ class ClassroomController extends Controller
      * - Lấy từ quan hệ many-to-many giữa User và ClassRoom
      * - Cần định nghĩa hàm joinedClassrooms trong model User
      */
-    public function myClassrooms()
+    public function myClassrooms(Request $request)
     {
-        // TRUY VẤN: Lấy danh sách các lớp học mà người dùng hiện tại đã tham gia
-        // auth()->user()->joinedClassrooms : Truy cập quan hệ 'joinedClassrooms' được định nghĩa trong Model User. Laravel sẽ tự động lấy các lớp học mà người dùng hiện tại có liên kết qua bảng trung gian.
-        $classrooms = auth()->user()->joinedClassrooms; // ->belongsToMany ở User
-        // Trả về view 'user.classrooms_user.my' và truyền dữ liệu 'classrooms' vào.
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $query = $user->joinedClassrooms();
+
+        if ($request->has('search') && $request->search) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        $classrooms = $query->get();
+
         return view('user.classrooms_user.my', compact('classrooms'));
     }
 

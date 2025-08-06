@@ -10,24 +10,24 @@ class FlashcardSuggest
     public function generate(string $subject, int $count = 3): array
     {
         $prompt = <<<PROMPT
-        Trả lời bằng tiếng việt
-        gợi ý đang dạng hơn k bị trùng
-Tạo $count thẻ flashcard cho môn "$subject".
-Mỗi thẻ gồm:
-- "question": một thuật ngữ hoặc khái niệm
-- "answer": định nghĩa ngắn
-- "image_url": null
+            Trả lời bằng tiếng việt
+            gợi ý đang dạng hơn k bị trùng
+            Tạo $count thẻ flashcard cho môn "$subject".
+            Mỗi thẻ gồm:
+            - "question": một thuật ngữ hoặc khái niệm
+            - "answer": định nghĩa ngắn
+            - "image_url": null
 
-Trả về kết quả dạng JSON:
-[
-  {
-    "question": "...",
-    "answer": "...",
-    "image_url": null
-  },
-  ...
-]
-PROMPT;
+            Trả về kết quả dạng JSON:
+            [
+            {
+                "question": "...",
+                "answer": "...",
+                "image_url": null
+            },
+            ...
+            ]
+        PROMPT;
 
         $cacheKey = 'together_flashcard_' . md5($prompt);
         if (Cache::has($cacheKey)) {
@@ -55,11 +55,11 @@ PROMPT;
     public function suggestTopics(string $subject): array
     {
         $prompt = <<<PROMPT
-        Trả lời bằng tiếng việt
-        gợi ý đang dạng hơn k bị trùng
-        Liệt kê chủ đề phổ biến của môn "$subject".
-        Trả về mảng JSON:
-        ["Chủ đề 1", "Chủ đề 2", "Chủ đề 3", "Chủ đề 4", "Chủ đề 5"]
+            Trả lời bằng tiếng việt
+            gợi ý đang dạng hơn k bị trùng
+            Liệt kê chủ đề phổ biến của môn "$subject".
+            Trả về mảng JSON:
+            ["Chủ đề 1", "Chủ đề 2", "Chủ đề 3", "Chủ đề 4", "Chủ đề 5"]
         PROMPT;
 
         $cacheKey = 'together_topics_' . md5($prompt);
