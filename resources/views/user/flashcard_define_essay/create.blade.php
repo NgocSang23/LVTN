@@ -161,11 +161,22 @@
             const errorModalBody = document.getElementById('errorModalBody');
             const bootstrapErrorModal = new bootstrap.Modal(errorModalEl);
 
+            // Disable các nút thao tác ban đầu
+            document.getElementById("add-card").disabled = true;
+            document.getElementById("create-multiple-cards").disabled = true;
+            numberOfCardsInput.disabled = true;
+
             let cachedFlashcards = [];
 
             function showErrorModal(message) {
                 errorModalBody.textContent = message;
                 bootstrapErrorModal.show();
+            }
+
+            function getUsedQuestions() {
+                return Array.from(document.querySelectorAll('.question-select'))
+                    .map(select => select.value)
+                    .filter(Boolean);
             }
 
             function createFlashcardCard(index) {
@@ -209,12 +220,14 @@
             function renderFlashcards(qaPairs) {
                 const count = parseInt(numberOfCardsInput.value) || qaPairs.length;
                 flashcardContent.innerHTML = "";
+
                 for (let i = 0; i < count; i++) {
-                    const item = qaPairs[i] ?? qaPairs[0]; // tránh lỗi thiếu dữ liệu
+                    const item = qaPairs[i] ?? qaPairs[0];
                     const newCard = createFlashcardCard(i + 1);
                     const questionSelect = newCard.querySelector('.question-select');
                     const answerSelect = newCard.querySelector('.answer-select');
 
+                    // Thêm các lựa chọn vào dropdown
                     qaPairs.forEach(entry => {
                         const option = document.createElement('option');
                         option.value = entry.question;
@@ -227,8 +240,23 @@
                     answerSelect.disabled = false;
 
                     questionSelect.addEventListener("change", function() {
+                        const selectedQuestion = this.value;
                         const selectedOption = this.options[this.selectedIndex];
-                        const answer = selectedOption.dataset.answer || '';
+                        const answer = selectedOption?.dataset.answer || '';
+
+                        // ✅ Kiểm tra trùng (ngoại trừ chính thẻ đang chọn)
+                        const allSelects = Array.from(document.querySelectorAll('.question-select'));
+                        const duplicates = allSelects.filter(sel => sel !== this && sel.value ===
+                            selectedQuestion);
+
+                        if (duplicates.length > 0) {
+                            showErrorModal(`Thuật ngữ "${selectedQuestion}" đã được chọn ở một thẻ khác.`);
+                            this.value = '';
+                            answerSelect.innerHTML = '<option selected disabled>Chọn định nghĩa</option>';
+                            return;
+                        }
+
+                        // ✅ Gán định nghĩa tương ứng
                         answerSelect.innerHTML = `<option value="${answer}">${answer}</option>`;
                         answerSelect.value = answer;
                     });
@@ -236,18 +264,69 @@
                     questionSelect.value = item.question;
                     questionSelect.dispatchEvent(new Event("change"));
 
+                    // ✅ Thêm ảnh từ AI nếu có
+                    const previewContainer = newCard.querySelector(".preview-container");
+                    const previewImage = newCard.querySelector(".image-preview");
+                    if (item.image_url) {
+                        previewImage.src = item.image_url;
+                        previewImage.classList.remove("d-none");
+                        previewContainer.classList.remove("d-none");
+                    }
+
                     flashcardContent.appendChild(newCard);
                 }
             }
 
+            async function fetchFlashcards(subjectName, count = 3) {
+                let collected = [];
+                let attempts = 0;
+                const maxAttempts = 5;
+
+                while (collected.length < count && attempts < maxAttempts) {
+                    const excluded = [...getUsedQuestions(), ...collected.map(item => item.question)];
+                    const res = await fetch("user/ai/suggest", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            subject_name: subjectName,
+                            count: count - collected.length,
+                            excluded_questions: excluded
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (data?.data?.length) {
+                        collected = [...collected, ...data.data];
+                    } else {
+                        break;
+                    }
+
+                    attempts++;
+                }
+
+                return {
+                    data: collected
+                };
+            }
+
             subjectSelect.addEventListener("change", async function() {
                 const subjectName = this.options[this.selectedIndex].text;
+                const count = parseInt(numberOfCardsInput.value) || 3;
+
                 topicSelect.disabled = true;
                 topicSelect.innerHTML = '<option selected disabled>Đang tải chủ đề...</option>';
                 flashcardContent.innerHTML = "";
 
+                // Vô hiệu hóa các nút khi chỉ chọn môn học
+                document.getElementById("add-card").disabled = true;
+                document.getElementById("create-multiple-cards").disabled = true;
+                numberOfCardsInput.disabled = true;
+
                 try {
-                    const [topicRes, flashcardRes] = await Promise.all([
+                    const [topicRes, flashcardData] = await Promise.all([
                         fetch("user/ai/suggest-topics", {
                             method: "POST",
                             headers: {
@@ -258,23 +337,9 @@
                             body: JSON.stringify({
                                 subject_name: subjectName
                             })
-                        }),
-                        fetch("user/ai/suggest", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": document.querySelector(
-                                    'meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify({
-                                subject_name: subjectName,
-                                count: 3
-                            })
-                        })
+                        }).then(res => res.json()),
+                        fetchFlashcards(subjectName, count)
                     ]);
-
-                    const topicData = await topicRes.json();
-                    const flashcardData = await flashcardRes.json();
 
                     if (flashcardData.data) {
                         cachedFlashcards = flashcardData.data;
@@ -283,9 +348,9 @@
                         showErrorModal(flashcardData.error || "Không có gợi ý flashcard.");
                     }
 
-                    if (Array.isArray(topicData.data)) {
+                    if (Array.isArray(topicRes.data)) {
                         topicSelect.innerHTML = '<option selected disabled>Chọn chủ đề</option>';
-                        topicData.data.forEach(topic => {
+                        topicRes.data.forEach(topic => {
                             const opt = document.createElement('option');
                             opt.value = topic;
                             opt.textContent = topic;
@@ -306,30 +371,22 @@
             topicSelect.addEventListener("change", async function() {
                 const subjectName = subjectSelect.options[subjectSelect.selectedIndex].text;
                 const topicTitle = this.value;
+                const count = parseInt(numberOfCardsInput.value) || 3;
                 flashcardContent.innerHTML = "";
 
                 try {
-                    const res = await fetch("user/ai/suggest", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')
-                                .content
-                        },
-                        body: JSON.stringify({
-                            subject_name: `${subjectName} - ${topicTitle}`,
-                            count: 3
-                        })
-                    });
-
-                    const data = await res.json();
+                    const data = await fetchFlashcards(`${subjectName} - ${topicTitle}`, count);
                     if (data.data) {
                         cachedFlashcards = data.data;
                         renderFlashcards(cachedFlashcards);
+
+                        // ✅ Cho phép thao tác các nút sau khi chọn chủ đề thành công
+                        document.getElementById("add-card").disabled = false;
+                        document.getElementById("create-multiple-cards").disabled = false;
+                        numberOfCardsInput.disabled = false;
                     } else {
                         showErrorModal(data.error || "Không có dữ liệu gợi ý.");
                     }
-
                 } catch (err) {
                     console.error(err);
                     showErrorModal("Lỗi khi lấy flashcard theo chủ đề.");
@@ -350,47 +407,125 @@
                 });
             }
 
-            document.getElementById("create-multiple-cards").addEventListener("click", function() {
+            document.getElementById("create-multiple-cards").addEventListener("click", async function() {
                 const count = parseInt(numberOfCardsInput.value);
                 if (!count || count < 1 || count > 50) {
                     showErrorModal("Vui lòng nhập số lượng thẻ hợp lệ (1-50).");
                     return;
                 }
-                if (cachedFlashcards.length > 0) {
+
+                const subjectName = subjectSelect.options[subjectSelect.selectedIndex]?.text;
+                if (!subjectName) {
+                    showErrorModal("Vui lòng chọn môn học.");
+                    return;
+                }
+
+                const topicName = topicSelect.value;
+                const fullSubject = topicName ? `${subjectName} - ${topicName}` : subjectName;
+
+                try {
+                    let missing = count - cachedFlashcards.length;
+
+                    if (missing > 0) {
+                        const result = await fetchFlashcards(fullSubject, missing);
+                        if (result?.data?.length) {
+                            cachedFlashcards = [...cachedFlashcards, ...result.data];
+                        } else {
+                            showErrorModal("Không thể lấy đủ flashcards từ AI.");
+                            return;
+                        }
+                    }
+
                     renderFlashcards(cachedFlashcards.slice(0, count));
-                } else {
-                    showErrorModal("Không có dữ liệu AI để tạo thẻ.");
+                } catch (err) {
+                    console.error(err);
+                    showErrorModal("Đã xảy ra lỗi khi tạo flashcard.");
                 }
             });
 
-            document.getElementById("add-card").addEventListener("click", function() {
-                const cardCount = document.querySelectorAll(".flashcard").length + 1;
-                const newCard = createFlashcardCard(cardCount);
+            numberOfCardsInput.addEventListener("change", function() {
+                document.getElementById("create-multiple-cards").click();
+            });
 
-                const questionSelect = newCard.querySelector('.question-select');
-                const answerSelect = newCard.querySelector('.answer-select');
+            document.getElementById("add-card").addEventListener("click", async function() {
+                try {
+                    const subjectName = subjectSelect.options[subjectSelect.selectedIndex]?.text;
+                    const topicName = topicSelect.value;
+                    if (!subjectName) {
+                        showErrorModal("Vui lòng chọn môn học.");
+                        return;
+                    }
 
-                if (cachedFlashcards.length > 0) {
-                    cachedFlashcards.forEach(item => {
-                        const option = document.createElement('option');
-                        option.value = item.question;
-                        option.textContent = item.question;
-                        option.dataset.answer = item.answer;
-                        questionSelect.appendChild(option);
-                    });
+                    const fullSubject = topicName ? `${subjectName} - ${topicName}` : subjectName;
+                    const data = await fetchFlashcards(fullSubject, 1);
 
-                    questionSelect.disabled = false;
-                    answerSelect.disabled = false;
+                    if (data.data && data.data.length > 0) {
+                        const newCardData = data.data[0];
+                        cachedFlashcards.push(newCardData);
 
-                    questionSelect.addEventListener("change", function() {
-                        const selectedOption = this.options[this.selectedIndex];
-                        const answer = selectedOption.dataset.answer || '';
-                        answerSelect.innerHTML = `<option value="${answer}">${answer}</option>`;
-                        answerSelect.value = answer;
-                    });
+                        const index = flashcardContent.querySelectorAll(".flashcard").length + 1;
+                        const newCard = createFlashcardCard(index);
+
+                        const questionSelect = newCard.querySelector('.question-select');
+                        const answerSelect = newCard.querySelector('.answer-select');
+
+                        cachedFlashcards.forEach(entry => {
+                            const option = document.createElement('option');
+                            option.value = entry.question;
+                            option.textContent = entry.question;
+                            option.dataset.answer = entry.answer;
+                            questionSelect.appendChild(option);
+                        });
+
+                        questionSelect.disabled = false;
+                        answerSelect.disabled = false;
+
+                        questionSelect.addEventListener("change", function() {
+                            const selectedQuestion = this.value;
+                            const selectedOption = this.options[this.selectedIndex];
+                            const answer = selectedOption?.dataset.answer || '';
+
+                            const allSelects = Array.from(document.querySelectorAll(
+                                '.question-select'));
+                            const duplicates = allSelects.filter(sel => sel !== this && sel
+                                .value === selectedQuestion);
+
+                            if (duplicates.length > 0) {
+                                showErrorModal(
+                                    `Thuật ngữ "${selectedQuestion}" đã được chọn ở một thẻ khác.`
+                                );
+                                this.value = '';
+                                answerSelect.innerHTML =
+                                    '<option selected disabled>Chọn định nghĩa</option>';
+                                return;
+                            }
+
+                            answerSelect.innerHTML =
+                                `<option value="${answer}">${answer}</option>`;
+                            answerSelect.value = answer;
+                        });
+
+                        questionSelect.value = newCardData.question;
+                        questionSelect.dispatchEvent(new Event("change"));
+
+                        // ✅ Hiển thị ảnh nếu có
+                        const previewContainer = newCard.querySelector(".preview-container");
+                        const previewImage = newCard.querySelector(".image-preview");
+                        if (newCardData.image_url && typeof newCardData.image_url === "string") {
+                            previewImage.src = newCardData.image_url;
+                            previewImage.classList.remove("d-none");
+                            previewContainer.classList.remove("d-none");
+                        }
+
+                        flashcardContent.appendChild(newCard);
+                        updateCardNumbers();
+                    } else {
+                        showErrorModal("Không có flashcard mới để thêm.");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showErrorModal("Lỗi khi thêm thẻ mới.");
                 }
-
-                flashcardContent.appendChild(newCard);
             });
 
             document.addEventListener("change", function(event) {

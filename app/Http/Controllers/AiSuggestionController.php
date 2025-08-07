@@ -12,20 +12,20 @@ class AiSuggestionController extends Controller
     {
         $request->validate([
             'subject_name' => 'required|string',
-            'count' => 'nullable|integer|min:1|max:10',
+            'count' => 'nullable|integer|min:1|max:50',
+            'excluded_questions' => 'nullable|array'
         ]);
 
         $subject = $request->input('subject_name');
-        $count = $request->input('count', 3);
+        $count = min($request->input('count', 3), 50); // ✅ Giới hạn tối đa 50
+        $excluded = $request->input('excluded_questions', []);
 
         $ai = new FlashcardSuggest();
-        $result = $ai->generate($subject, $count);
+        $result = $ai->generate($subject, $count, $excluded);
 
         if (isset($result['error'])) {
             return response()->json(['error' => $result['error']], 500);
         }
-
-        Log::info('AI result:', $result);
 
         return response()->json(['data' => $result]);
     }

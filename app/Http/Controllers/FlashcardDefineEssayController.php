@@ -44,7 +44,6 @@ class FlashcardDefineEssayController extends Controller
         $data = $request->validate([
             'subject_id' => 'required|exists:subjects,id',
             'topic_title' => 'required|max:255',
-            'question_type' => 'required',
             'question_content' => 'required|array',
             'question_content.*' => 'required|string',
             'answer_content' => 'required|array',
@@ -57,7 +56,6 @@ class FlashcardDefineEssayController extends Controller
             'subject_id.exists' => 'Môn học không tồn tại.',
             'topic_title.required' => 'Vui lòng nhập tiêu đề.',
             'topic_title.max' => 'Tiêu đề không được vượt quá 255 ký tự.',
-            'question_type.required' => 'Vui lòng chọn loại câu hỏi',
             'question_content.required' => 'Vui lòng nhập câu hỏi.',
             'question_content.*.required' => 'Vui lòng nhập nội dung cho tất cả các câu hỏi.',
             'question_content.*.string' => 'Nội dung câu hỏi phải là kiểu chuỗi.',
@@ -111,7 +109,7 @@ class FlashcardDefineEssayController extends Controller
             $question = new Question();
             $question->content = $questionContent;
             $question->level = 1;
-            $question->type = $data['question_type'];
+            $question->type = "definition";
             $question->card_id = $card->id;
             $question->topic_id = $topic->id;
             $question->save();

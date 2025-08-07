@@ -111,22 +111,31 @@
 
     <!-- Modal kết quả -->
     <div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-            <div class="modal-content" style="border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: none;">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 14px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); border: none;">
                 <div class="modal-header"
-                    style="background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                    <h5 class="modal-title" style="font-weight: 600;">🎉 Kết quả</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                        style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
+                    style="background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border-top-left-radius: 14px; border-top-right-radius: 14px;">
+                    <h5 class="modal-title fw-bold">🎉 Kết quả bài làm</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
-                <div class="modal-body" style="font-size: 1.1rem; color: #333; text-align: center; padding: 20px;">
-                    <p id="resultMessage" style="margin-bottom: 10px; font-weight: 500;"></p>
-                    <p id="resultScore" style="font-size: 1.2rem; color: #0072ff; font-weight: 600;"></p>
-                    <p id="resultTime" style="margin-top: 10px;"></p>
+
+                <div class="modal-body px-4 py-3">
+                    <!-- Tổng kết -->
+                    <div class="text-center mb-4">
+                        <p id="resultMessage" class="fs-5 fw-semibold text-dark"></p>
+                        <p id="resultScore" class="fs-4 fw-bold text-primary mb-1"></p>
+                        <p id="resultTime" class="text-muted"></p>
+                    </div>
+
+                    <!-- Chi tiết từng câu -->
+                    <div id="resultDetail" class="mt-3" style="max-height: 60vh; overflow-y: auto;"></div>
                 </div>
-                <div class="modal-footer d-flex justify-content-center" style="padding: 20px;">
-                    <a href="{{ route('user.dashboard') }}" class="btn btn-primary"
-                        style="padding: 8px 20px; border-radius: 6px;">Đóng</a>
+
+                <div class="modal-footer justify-content-center py-3">
+                    <a href="{{ route('user.dashboard') }}" class="btn btn-primary px-4 rounded-pill">
+                        Về trang chủ
+                    </a>
                 </div>
             </div>
         </div>
@@ -182,6 +191,7 @@
             let timeLeft = 0; // Biến lưu thời gian còn lại của bài kiểm tra
             let initialTime = 0; // Biến lưu thời gian bài kiểm tra ban đầu
             let statusQuestions = {}; // Đối tượng lưu trạng thái câu hỏi đã trả lời
+            let timerInterval;
 
             // Hàm gọi API để lấy danh sách câu hỏi
             async function fetchTests() {
@@ -196,10 +206,13 @@
                         multiplequestions = tests.multiplequestions; // Lưu danh sách câu hỏi
                         // console.log(tests.id);
 
-                        document.getElementById("topic-title").innerText = tests.questionnumbers?.[0]?.topic?.title || "Không có tiêu đề";
+                        document.getElementById("topic-title").innerText = tests.questionnumbers?.[0]?.topic
+                            ?.title || "Không có tiêu đề";
 
-                        document.getElementById("deleteForm").action = `{{ route('flashcard_multiple_choice.destroy', ':id') }}`.replace(':id', tests.id);
-                        document.getElementById("editTestForm").action = `{{ route('flashcard_multiple_choice.update', ':id') }}`.replace(':id', tests.id);
+                        document.getElementById("deleteForm").action =
+                            `{{ route('flashcard_multiple_choice.destroy', ':id') }}`.replace(':id', tests.id);
+                        document.getElementById("editTestForm").action =
+                            `{{ route('flashcard_multiple_choice.update', ':id') }}`.replace(':id', tests.id);
 
                         // Chuyển đổi thời gian từ định dạng "MM:SS" thành tổng số giây
                         timeLeft = tests.time.split(":").reduce((acc, val) => acc * 60 + parseInt(val), 0);
@@ -233,7 +246,8 @@
                                     </div>
                                 `;
                                 // Thêm input hidden cho option_id
-                                optionIds += `<input type="hidden" name="option_id[${index}][]" value="${opt.option.id}">`;
+                                optionIds +=
+                                    `<input type="hidden" name="option_id[${index}][]" value="${opt.option.id}">`;
                             });
 
                             containerEdit.innerHTML += `
@@ -300,13 +314,13 @@
                             <h5 class="fw-bold">Câu ${index + 1}: ${question.content}</h5>
                             <div class="mt-3">
                                 ${question.testresults?.map((opt, idx) => `
-                                <div class="form-check">
-                                        <input class="form-check-input option-input" type="radio" name="question${question.id}" value="${opt.option_id}" id="opt${question.id}-${idx}">
-                                        <label class="form-check-label" for="opt${question.id}-${idx}">
-                                            <strong>${String.fromCharCode(65 + idx)}.</strong> ${opt.option.content}
-                                        </label>
-                                    </div>
-                                `).join('') || '<p>Không có đáp án</p>'}
+                                                                <div class="form-check">
+                                                                        <input class="form-check-input option-input" type="radio" name="question${question.id}" value="${opt.option_id}" id="opt${question.id}-${idx}">
+                                                                        <label class="form-check-label" for="opt${question.id}-${idx}">
+                                                                            <strong>${String.fromCharCode(65 + idx)}.</strong> ${opt.option.content}
+                                                                        </label>
+                                                                    </div>
+                                                                `).join('') || '<p>Không có đáp án</p>'}
                             </div>
                         </div>`;
                 });
@@ -327,16 +341,9 @@
                         document.querySelectorAll(`input[name='question${questionId}']`).forEach(
                             radio => {
                                 let label = radio.nextElementSibling;
-                                label.classList.remove("bg-success", "bg-danger", "text-white", "p-1", "rounded");
-                                radio.disabled = true; // Khóa ô chọn sau khi đã chọn đáp án
+                                label.classList.remove("bg-success", "bg-danger", "text-white",
+                                    "p-1", "rounded");
                             });
-
-                        // Đánh dấu đúng/sai
-                        if (selectedAnswer && selectedAnswer.answer === "1") {
-                            this.nextElementSibling.classList.add("bg-success", "text-white", "p-1", "rounded");
-                        } else {
-                            this.nextElementSibling.classList.add("bg-danger", "text-white", "p-1", "rounded");
-                        }
 
                         // Cập nhật trạng thái câu hỏi đã trả lời
                         statusQuestions[questionId] = true;
@@ -381,40 +388,80 @@
                     }
                 };
                 updateTimer();
-                let timerInterval = setInterval(updateTimer, 1000);
+                timerInterval = setInterval(updateTimer, 1000);
             }
 
             // Hiển thị kết quả bài làm
             document.getElementById("confirmSubmit").addEventListener("click", function() {
+                clearInterval(timerInterval); // ✅ Dừng thời gian khi nộp bài
+
                 let correctCount = 0;
                 let totalQuestions = multiplequestions.length;
 
-                multiplequestions.forEach(question => {
-                    let selected = document.querySelector(`input[name='question${question.id}']:checked`);
-                    if (selected) {
-                        let selectedOptionId = parseInt(selected.value);
-                        let selectAnswer = question.testresults.find(opt => opt.option_id ===
-                            selectedOptionId);
-                        if (selectAnswer && selectAnswer.answer === "1") {
-                            correctCount++;
-                        }
-                    }
+                let resultListHtml = ""; // HTML từng câu hỏi
+
+                multiplequestions.forEach((question, index) => {
+                    let selectedInput = document.querySelector(
+                        `input[name='question${question.id}']:checked`);
+                    let selectedOptionId = selectedInput ? parseInt(selectedInput.value) : null;
+
+                    let correctOption = question.testresults.find(opt => opt.answer === "1");
+                    let selectedOption = question.testresults.find(opt => opt.option_id ===
+                        selectedOptionId);
+
+                    let isCorrect = selectedOption && selectedOption.option_id === correctOption
+                        .option_id;
+                    if (isCorrect) correctCount++;
+
+                    resultListHtml += `
+                        <div class="card p-3 mb-3 border ${isCorrect ? 'border-success' : 'border-danger'}">
+                            <h6 class="mb-2"><strong>Câu ${index + 1}:</strong> ${question.content}</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Đáp án của bạn:</strong>
+                                    ${selectedOption ? selectedOption.option.content : "<em>Không chọn</em>"}
+                                    ${isCorrect ? '<span class="text-success ms-2">✅</span>' : '<span class="text-danger ms-2">❌</span>'}
+                                </li>
+                                <li><strong>Đáp án đúng:</strong>
+                                    <span class="text-primary">${correctOption.option.content}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    `;
                 });
 
                 let score = (correctCount / totalQuestions) * 100;
-                let textResult = `Bạn đã trả lời đúng ${correctCount}/${totalQuestions} câu hỏi`;
-
                 let timeSpent = initialTime - timeLeft;
                 if (timeSpent < 0) timeSpent = 0;
                 let minutes = Math.floor(timeSpent / 60);
                 let seconds = timeSpent % 60;
-                let timeMessage = `Thời gian làm bài: ${minutes} phút ${seconds.toString().padStart(2, '0')} giây`;
 
-                document.getElementById("resultMessage").innerText = textResult;
-                document.getElementById("resultScore").innerText = `Điểm của bạn là ${score}`;
-                document.getElementById("resultTime").innerText = timeMessage;
+                // Cập nhật modal
+                document.getElementById("resultMessage").innerText =
+                    `Bạn đã trả lời đúng ${correctCount}/${totalQuestions} câu hỏi`;
+                document.getElementById("resultScore").innerText = `Điểm của bạn là ${score.toFixed(2)}`;
+                document.getElementById("resultTime").innerText =
+                    `Thời gian làm bài: ${minutes} phút ${seconds.toString().padStart(2, '0')} giây`;
 
+                // Tạo nội dung chi tiết trong kết quả
+                const detailContainer = document.getElementById("resultDetail");
+                if (detailContainer) {
+                    detailContainer.innerHTML = resultListHtml;
+                }
+
+                // Gọi modal
+                const resultModal = new bootstrap.Modal(document.getElementById("resultModal"));
+                resultModal.show();
+
+                // Gửi lịch sử làm bài
                 saveHistory(correctCount, totalQuestions);
+            });
+
+            document.getElementById("resultModal").addEventListener("hidden.bs.modal", function() {
+                document.body.classList.remove("modal-open");
+                document.querySelectorAll(".modal-backdrop").forEach(el => el.remove());
+
+                // 👉 Thêm reload ở đây
+                window.location.reload();
             });
 
             // Lưu lịch sử bài làm

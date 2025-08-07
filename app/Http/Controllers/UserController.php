@@ -16,7 +16,8 @@ class UserController extends Controller
 {
     public function dashboard(Request $request)
     {
-        // 1. Lấy danh sách các card_id nằm trong các bộ được chia sẻ công khai
+        $userId = auth()->id();
+
         $public_card_ids = FlashcardSet::where('is_public', 1)
             ->pluck('question_ids')
             ->flatMap(fn($ids) => explode(',', $ids))
@@ -24,35 +25,40 @@ class UserController extends Controller
             ->unique()
             ->toArray();
 
-        // 2. Lọc card định nghĩa + có topic
-        $card_defines = Card::with(['question.topic.subject', 'user'])
-            ->whereHas('question', function ($query) {
-                $query->where('type', 'definition');
-            })
+        $cards = Card::with(['question.topic.subject', 'user'])
+            ->whereHas('question', fn($query) => $query->where('type', 'definition'))
             ->latest()
             ->get()
             ->filter(fn($card) => $card->question && $card->question->topic)
-            // 3. Chỉ lấy những card có ID nằm trong danh sách được chia sẻ công khai
-            ->filter(fn($card) => in_array($card->id, $public_card_ids))
-            // 4. Nhóm theo topic
+            ->filter(fn($card) => in_array($card->id, $public_card_ids));
+
+        // 👉 Tách "của bạn" và "từ cộng đồng"
+        $my_flashcards = $cards->filter(fn($card) => $card->user_id === $userId)
             ->groupBy(fn($card) => $card->question->topic->id)
             ->map(fn($group) => [
-                'first_card' => $group->first(), // Card đầu tiên hiển thị
-                'card_ids' => $group->pluck('id')->implode(','), // ID của tất cả cards cùng chủ đề
-                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')), // mã hoá để dùng trong link
+                'first_card' => $group->first(),
+                'card_ids' => $group->pluck('id')->implode(','),
+                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')),
             ])
             ->take(6);
 
-        // 5. Lấy các bài kiểm tra mới nhất
-        $tests = Test::with(['questionnumbers.topic', 'user'])->latest()->get()->take(6);
+        $community_flashcards = $cards->filter(fn($card) => $card->user_id !== $userId)
+            ->groupBy(fn($card) => $card->question->topic->id)
+            ->map(fn($group) => [
+                'first_card' => $group->first(),
+                'card_ids' => $group->pluck('id')->implode(','),
+                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')),
+            ])
+            ->take(6);
 
-        // 6. Nếu là giáo viên, lấy danh sách lớp học
+        $tests = Test::with(['questionnumbers.topic', 'user'])->latest()->take(6)->get();
+
         $myClassrooms = [];
         if (auth()->check() && auth()->user()->roles === 'teacher') {
             $myClassrooms = ClassRoom::where('teacher_id', auth()->id())->get();
         }
 
-        return view('user.dashboard', compact('card_defines', 'tests', 'myClassrooms'));
+        return view('user.dashboard', compact('my_flashcards', 'community_flashcards', 'tests', 'myClassrooms'));
     }
 
     public function library(Request $request)

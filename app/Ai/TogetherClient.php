@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class TogetherClient
 {
-    public function chat(string $prompt, string $model = null, int $maxTokens = 400): ?string
+    public function chat(string $prompt, ?string $model = null, int $maxTokens = 5000): ?string
     {
         $model = $model ?? env('TOGETHER_MODEL');
         $apiKey = env('TOGETHER_API_KEY');
