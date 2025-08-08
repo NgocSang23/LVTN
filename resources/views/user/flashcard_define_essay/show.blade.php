@@ -3,12 +3,6 @@
 @section('title', 'Ôn luyện các khái niệm / các câu tự luận')
 
 @section('content')
-    @if (Session::has('success'))
-        <div class="alert alert-success fixed-top text-center p-3 shadow-lg js-div-dissappear"
-            style="width: 100%; max-width: 400px; margin: 10px auto; z-index: 1050;">
-            <i class="fas fa-check-circle me-2"></i> {{ Session::get('success') }}
-        </div>
-    @endif
     <style>
         .preview-container {
             width: 200px;
@@ -907,9 +901,9 @@
             speechSynthesis.onvoiceschanged = () => {
                 const voices = speechSynthesis
                     .getVoices(); // Lấy lại danh sách giọng đọc sau khi sự kiện kích hoạt.
-                console.log(
-                    "--- Available voices (onvoiceschanged) ---"
-                ); // In ra tiêu đề để dễ theo dõi trong console.
+                // console.log(
+                //     "--- Available voices (onvoiceschanged) ---"
+                // ); // In ra tiêu đề để dễ theo dõi trong console.
 
                 // Kiểm tra xem có giọng đọc nào được tìm thấy không.
                 if (voices.length === 0) {
@@ -935,10 +929,10 @@
                             .name.toLowerCase().includes("roger") || v.name.toLowerCase().includes(
                                 "steffan") ? "Male" : "Unknown";
                         // In thông tin chi tiết của từng giọng đọc ra console: số thứ tự, tên, ngôn ngữ và giới tính đã đoán.
-                        console.log(`${i + 1}. Name: ${v.name}, Lang: ${v.lang}, Gender: ${gender}`);
+                        // console.log(`${i + 1}. Name: ${v.name}, Lang: ${v.lang}, Gender: ${gender}`);
                     });
                 }
-                console.log("--- End of voices list ---"); // Kết thúc danh sách.
+                // console.log("--- End of voices list ---"); // Kết thúc danh sách.
             };
 
             // --- Xử lý sự kiện khi DOM (Document Object Model) đã được tải hoàn chỉnh ---
@@ -1035,14 +1029,4 @@
             fetchQuestions();
         });
     </script>
-@endsection
-
-@section('css')
-    <link rel="stylesheet" href="{{ asset('assets/css/message.css') }}" />
-@endsection
-
-@section('js')
-    @if (Session::has('success'))
-        <script src="{{ asset('assets/js/message.js') }}"></script>
-    @endif
 @endsection

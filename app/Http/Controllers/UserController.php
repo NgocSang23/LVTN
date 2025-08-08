@@ -11,6 +11,7 @@ use App\Models\Card;
 use App\Models\ClassRoom;
 use App\Models\FlashcardSet;
 use App\Models\Test;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -18,6 +19,7 @@ class UserController extends Controller
     {
         $userId = auth()->id();
 
+        // Lấy danh sách các card ID công khai từ FlashcardSet
         $public_card_ids = FlashcardSet::where('is_public', 1)
             ->pluck('question_ids')
             ->flatMap(fn($ids) => explode(',', $ids))
@@ -25,15 +27,15 @@ class UserController extends Controller
             ->unique()
             ->toArray();
 
-        $cards = Card::with(['question.topic.subject', 'user'])
-            ->whereHas('question', fn($query) => $query->where('type', 'definition'))
+        // Lấy toàn bộ các thẻ có câu hỏi và topic
+        $all_cards = Card::with(['question.topic.subject', 'user'])
+            ->whereHas('question')
             ->latest()
             ->get()
-            ->filter(fn($card) => $card->question && $card->question->topic)
-            ->filter(fn($card) => in_array($card->id, $public_card_ids));
+            ->filter(fn($card) => $card->question && $card->question->topic);
 
-        // 👉 Tách "của bạn" và "từ cộng đồng"
-        $my_flashcards = $cards->filter(fn($card) => $card->user_id === $userId)
+        // 👉 "Thẻ của bạn" - KHÔNG cần phải công khai mới hiện
+        $my_flashcards = $all_cards->filter(fn($card) => $card->user_id === $userId)
             ->groupBy(fn($card) => $card->question->topic->id)
             ->map(fn($group) => [
                 'first_card' => $group->first(),
@@ -42,7 +44,12 @@ class UserController extends Controller
             ])
             ->take(6);
 
-        $community_flashcards = $cards->filter(fn($card) => $card->user_id !== $userId)
+        // 👉 "Từ cộng đồng" - chỉ hiển thị các thẻ công khai
+        $community_flashcards = $all_cards->filter(
+            fn($card) =>
+            $card->user_id !== $userId &&
+                in_array($card->id, $public_card_ids)
+        )
             ->groupBy(fn($card) => $card->question->topic->id)
             ->map(fn($group) => [
                 'first_card' => $group->first(),
@@ -55,7 +62,7 @@ class UserController extends Controller
 
         $myClassrooms = [];
         if (auth()->check() && auth()->user()->roles === 'teacher') {
-            $myClassrooms = ClassRoom::where('teacher_id', auth()->id())->get();
+            $myClassrooms = ClassRoom::where('teacher_id', $userId)->get();
         }
 
         return view('user.dashboard', compact('my_flashcards', 'community_flashcards', 'tests', 'myClassrooms'));
@@ -64,30 +71,50 @@ class UserController extends Controller
     public function library(Request $request)
     {
         $tab = $request->get('tab', 'define_essay');
-
+        $sort = $request->get('sort', 'all'); // 'all', 'new', 'old'
         $card_defines = collect();
         $tests = collect();
         $myClassrooms = collect();
 
+        $oneWeekAgo = Carbon::now()->subWeek();
+
         if ($tab === 'define_essay') {
-            $card_defines = Card::with(['question.topic.subject', 'user', 'flashcardSet']) // ← thêm ở đây
-                ->where('user_id', Auth::id())
-                ->whereHas('question', fn($q) => $q->where('type', 'definition'))
-                ->latest()->get()
+            $query = Card::with(['question.topic.subject', 'user', 'flashcardSet'])
+                ->where('user_id', Auth::id());
+
+            if ($sort === 'new') {
+                $query->where('created_at', '>=', $oneWeekAgo)->orderBy('created_at', 'desc');
+            } elseif ($sort === 'old') {
+                $query->where('created_at', '<', $oneWeekAgo)->orderBy('created_at', 'asc');
+            } else {
+                // all
+                $query->orderBy('created_at', 'desc');
+            }
+
+            $card_defines = $query->get()
                 ->filter(fn($card) => $card->question && $card->question->topic)
                 ->groupBy(fn($card) => $card->question->topic->id)
                 ->map(fn($group) => [
                     'first_card' => $group->first(),
                     'card_ids' => $group->pluck('id')->implode(','),
-                ])->take(6);
+                ])
+                ->take(6);
         }
 
         if ($tab === 'multiple') {
-            $tests = Test::with(['questionnumbers.topic', 'user'])
-                ->where('user_id', Auth::id())
-                ->latest()
-                ->take(6)
-                ->get();
+            $query = Test::with(['questionnumbers.topic', 'user'])
+                ->where('user_id', Auth::id());
+
+            if ($sort === 'new') {
+                $query->where('created_at', '>=', $oneWeekAgo)->orderBy('created_at', 'desc');
+            } elseif ($sort === 'old') {
+                $query->where('created_at', '<', $oneWeekAgo)->orderBy('created_at', 'asc');
+            } else {
+                // all
+                $query->orderBy('created_at', 'desc');
+            }
+
+            $tests = $query->take(6)->get();
 
             if (auth()->user()->roles === 'teacher') {
                 $myClassrooms = ClassRoom::where('teacher_id', Auth::id())->get();

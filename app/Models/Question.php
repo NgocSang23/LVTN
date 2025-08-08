@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property string $content
@@ -51,27 +51,33 @@ class Question extends Model
         'type'
     ];
 
-    public function AnswerUser() {
+    public function answerUser()
+    {
         return $this->hasMany(AnswerUser::class, 'question_id');
     }
 
-    public function Card() {
+    public function card()
+    {
         return $this->belongsTo(Card::class, 'card_id');
     }
 
-    public function Images() {
+    public function images()
+    {
         return $this->hasMany(Image::class);
     }
 
-    public function Answers() {
+    public function answers()
+    {
         return $this->hasMany(Answer::class);
     }
 
-    public function Topic() {
+    public function topic()
+    {
         return $this->belongsTo(Topic::class);
     }
 
-    public function DifficultCards() {
+    public function difficultCards()
+    {
         return $this->hasMany(DifficultCard::class);
     }
 }

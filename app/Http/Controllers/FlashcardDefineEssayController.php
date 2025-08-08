@@ -48,8 +48,8 @@ class FlashcardDefineEssayController extends Controller
             'question_content.*' => 'required|string',
             'answer_content' => 'required|array',
             'answer_content.*' => 'required|string',
-            'image_name' => 'nullable|array',
-            'image_name.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image_name' => 'required|array',
+            'image_name.*' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'classroom_id' => 'nullable|exists:class_rooms,id',
         ], [
             'subject_id.required' => 'Vui lòng chọn môn học.',
@@ -62,14 +62,14 @@ class FlashcardDefineEssayController extends Controller
             'answer_content.required' => 'Vui lòng nhập câu trả lời.',
             'answer_content.*.required' => 'Vui lòng nhập nội dung cho tất cả các câu trả lời.',
             'answer_content.*.string' => 'Nội dung câu trả lời phải là kiểu chuỗi.',
-            'image_name.required' => 'Vui lòng tải lên hình ảnh.',
+            'image_name.required' => 'Vui lòng chọn ảnh cho mỗi câu hỏi.',
+            'image_name.*.required' => 'Mỗi câu hỏi đều cần có một ảnh.',
             'image_name.*.image' => 'File tải lên phải là hình ảnh.',
-            'image_name.*.mimes' => 'Hình ảnh phải có định dạng jpeg, png, jpg, gif hoặc webp.',
+            'image_name.*.mimes' => 'Hình ảnh phải có định dạng jpeg, png, jpg, gif hoặc webp.',
             'image_name.*.max' => 'Kích thước hình ảnh không được vượt quá 2048KB.',
             'classroom_id.exists' => 'Lớp học không tồn tại.',
         ]);
 
-        // Tạo chủ đề mới nếu cần
         $topic = new Topic();
         $topic->title = $data['topic_title'];
         $topic->subject_id = $data['subject_id'];
@@ -77,11 +77,10 @@ class FlashcardDefineEssayController extends Controller
 
         $flashcardSet = new FlashcardSet();
         $flashcardSet->title = $data['topic_title'];
-        $flashcardSet->description = 'Tự động tạo từ form giáo viên'; // có thể sửa theo nội dung thật
+        $flashcardSet->description = 'Tự động tạo từ form giáo viên';
         $flashcardSet->user_id = auth()->id();
         $flashcardSet->save();
 
-        // Nếu giáo viên chọn lớp học, lưu vào bảng classroom_flashcards
         if (!empty($data['classroom_id'])) {
             $exists = ClassroomFlashcard::where('classroom_id', $data['classroom_id'])
                 ->where('flashcard_set_id', $flashcardSet->id)
@@ -96,16 +95,13 @@ class FlashcardDefineEssayController extends Controller
             }
         }
 
-        // Lưu từng câu hỏi, câu trả lời, hình ảnh
         $questionIds = [];
 
         foreach ($request->question_content as $index => $questionContent) {
-            // Tạo thẻ flashcard
             $card = new Card();
             $card->user_id = auth()->id();
             $card->save();
 
-            // Tạo câu hỏi
             $question = new Question();
             $question->content = $questionContent;
             $question->level = 1;
@@ -114,16 +110,13 @@ class FlashcardDefineEssayController extends Controller
             $question->topic_id = $topic->id;
             $question->save();
 
-            // ✅ Thêm dòng này để gom ID lại
             $questionIds[] = $question->id;
 
-            // Lưu câu trả lời
             $answer = new Answer();
             $answer->content = $request->answer_content[$index];
             $answer->question_id = $question->id;
             $answer->save();
 
-            // Nếu có hình ảnh, lưu vào thư mục và cơ sở dữ liệu
             if ($request->hasFile("image_name.$index")) {
                 $image = $request->file("image_name.$index");
                 $imageName = time() . '_' . $image->getClientOriginalName();
@@ -137,7 +130,6 @@ class FlashcardDefineEssayController extends Controller
             }
         }
 
-        // 🔥 Cập nhật lại question_ids cho FlashcardSet
         $flashcardSet->question_ids = implode(',', $questionIds);
         $flashcardSet->save();
 
@@ -263,63 +255,61 @@ class FlashcardDefineEssayController extends Controller
         return view('user.flashcard_define_essay.show', compact('cards', 'question'));
     }
 
-    public function edit(string $id)
-    {
-        //
-    }
-
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $card_id)
     {
         $request->validate([
             'question' => 'required|string|max:255',
             'answer' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Kiểm tra file ảnh
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ], [
             'question.required' => 'Vui lòng nhập nội dung câu hỏi',
             'answer.required' => 'Vui lòng nhập nội dung đáp án',
-            'image.image' => 'Vui lòng chọn file ảnh',
+            'image.image' => 'Vui lòng chọn file ảnh hợp lệ',
         ]);
 
-        // Cập nhật câu hỏi
-        $question = Question::find($id);
+        // Lấy câu hỏi đầu tiên thuộc card_id
+        $question = Question::where('card_id', $card_id)->first();
+
         if (!$question) {
-            return redirect()->back()->with('error', 'Câu hỏi không tồn tại!');
+            return redirect()->back()->with('error', 'Không tìm thấy câu hỏi!');
         }
+
+        // Cập nhật nội dung
         $question->content = $request->question;
         $question->save();
 
-        // Cập nhật hoặc tạo mới câu trả lời
-        $answer = Answer::where('question_id', $id)->first();
+        // Cập nhật hoặc tạo mới đáp án
+        $answer = Answer::where('question_id', $question->id)->first();
         if ($answer) {
             $answer->content = $request->answer;
             $answer->save();
         } else {
             Answer::create([
                 'content' => $request->answer,
-                'question_id' => $id,
+                'question_id' => $question->id,
             ]);
         }
 
-        // Cập nhật hoặc thêm hình ảnh
+        // Cập nhật ảnh
         if ($request->hasFile('image')) {
             $imageFile = $request->file('image');
             $imageName = time() . '_' . $imageFile->getClientOriginalName();
             $imagePath = $imageFile->storeAs('images', $imageName, 'public');
 
-            $image = Image::where('question_id', $id)->first();
+            $image = Image::where('question_id', $question->id)->first();
             if ($image) {
-                // Xóa ảnh cũ nếu có
-                if ($image->path) {
+                if ($image->path && Storage::disk('public')->exists($image->path)) {
                     Storage::disk('public')->delete($image->path);
                 }
-                $image->path = $imagePath;
-                $image->name = $imageName;
-                $image->save();
+                $image->update([
+                    'path' => $imagePath,
+                    'name' => $imageName,
+                ]);
             } else {
                 Image::create([
-                    'question_id' => $id,
+                    'question_id' => $question->id,
                     'path' => $imagePath,
-                    'name' => $imageName
+                    'name' => $imageName,
                 ]);
             }
         }
@@ -327,66 +317,48 @@ class FlashcardDefineEssayController extends Controller
         return redirect()->back()->with('success', 'Cập nhật câu hỏi thành công!');
     }
 
-    public function destroy(string $id)
+    public function destroy(string $card_id)
     {
-        $question = Question::find($id);
+        $question = Question::where('card_id', $card_id)->first();
 
         if (!$question) {
-            return redirect()->back()->with('error', 'Không tìm thấy câu hỏi!');
+            return redirect()->route('user.dashboard')->with('error', 'Không tìm thấy câu hỏi!');
         }
 
-        $card_id = $question->card_id;
+        // Lưu topic_id để redirect sau khi xóa
+        $topicId = $question->topic_id;
 
-        // XÓA liên quan trước
+        // Xoá dữ liệu liên quan
         DifficultCard::where('question_id', $question->id)->delete();
-
-        $question->images()->delete();
-        $question->answers()->delete();
-
         AnswerUser::where('question_id', $question->id)->delete();
 
+        foreach ($question->images as $image) {
+            if ($image->path && Storage::disk('public')->exists($image->path)) {
+                Storage::disk('public')->delete($image->path);
+            }
+            $image->delete();
+        }
+
+        $question->answers()->delete();
         $question->delete();
 
-        // Nếu card không còn câu hỏi nào, thì xóa luôn
         $remainingQuestions = Question::where('card_id', $card_id)->count();
         if ($remainingQuestions == 0) {
             Card::where('id', $card_id)->delete();
         }
 
-        return redirect()->route('user.dashboard')->with('success', 'Xóa câu hỏi thành công!');
-    }
+        // Tìm các card còn lại trong topic này
+        $remainingCardIds = Question::where('topic_id', $topicId)
+            ->pluck('card_id')
+            ->unique()
+            ->toArray();
 
-    public function destroyAll(string $card_id)
-    {
-        // Tìm thẻ theo card_id
-        $card = Card::find($card_id);
-        if (!$card) {
-            return redirect()->back()->with('error', 'Không tìm thấy thẻ!');
+        if (count($remainingCardIds) > 0) {
+            $encoded = base64_encode(implode(',', $remainingCardIds));
+            return redirect()->route('user.flashcard_define_essay', ['ids' => $encoded])
+                ->with('success', 'Xóa câu hỏi thành công!');
+        } else {
+            return redirect()->route('user.dashboard')->with('success', 'Xóa toàn bộ câu hỏi trong chủ đề.');
         }
-
-        // Lấy tất cả câu hỏi của thẻ này
-        $questions = Question::where('card_id', $card_id)->get();
-
-        foreach ($questions as $question) {
-            // Xóa các ảnh liên quan
-            $question->images()->delete();
-
-            // Xóa các câu trả lời
-            $question->answers()->delete();
-
-            // Xóa câu trả lời người dùng nếu có
-            $answerUser = AnswerUser::where('question_id', $question->id)->first();
-            if ($answerUser) {
-                $answerUser->delete();
-            }
-
-            // Xóa câu hỏi
-            $question->delete();
-        }
-
-        // Sau khi xóa hết câu hỏi, xóa thẻ
-        $card->delete();
-
-        return redirect()->route('user.dashboard')->with('success', 'Xóa toàn bộ câu hỏi và thẻ thành công!');
     }
 }

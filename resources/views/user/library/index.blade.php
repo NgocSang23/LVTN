@@ -45,6 +45,7 @@
             <input type="hidden" name="tab" value="{{ $activeTab }}">
             <div class="col-md-3">
                 <select name="sort" class="form-select">
+                    <option value="all" {{ request('sort') == 'all' ? 'selected' : '' }}>Tất cả</option>
                     <option value="new" {{ request('sort') == 'new' ? 'selected' : '' }}>Mới nhất</option>
                     <option value="old" {{ request('sort') == 'old' ? 'selected' : '' }}>Cũ nhất</option>
                 </select>

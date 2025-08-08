@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property string $content
@@ -33,7 +33,7 @@ class Answer extends Model
         'question_id'
     ];
 
-    public function Question() {
+    public function question() {
         return $this->belongsTo(Question::class);
     }
 }

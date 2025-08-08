@@ -217,11 +217,11 @@
             </div>
         </div>
 
-        {{-- Điều hướng --}}
-        <div class="nav-controls">
-            <button onclick="prevEssay()"><i class="fas fa-arrow-left"></i> Trước</button>
-            <div id="questionCounter">1 / {{ count($flashcards) }}</div>
-            <button onclick="nextEssay()">Tiếp <i class="fas fa-arrow-right"></i></button>
+        {{-- Nút Tiếp tục duy nhất --}}
+        <div class="nav-controls d-flex justify-content-center align-items-center mt-4">
+            <button id="nextEssayBtn" class="btn btn-primary px-4">
+                Tiếp tục
+            </button>
         </div>
     </div>
 

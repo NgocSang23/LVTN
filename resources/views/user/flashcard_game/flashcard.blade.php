@@ -324,16 +324,10 @@
             </div>
         </div>
 
-        {{-- Nút điều hướng --}}
-        <div class="nav-controls d-flex justify-content-center align-items-center gap-3 mt-4">
-            <button onclick="prevFlashcard()">
-                <i class="fas fa-arrow-left"></i> Trước
-            </button>
-            <div id="flashcardCounter" class="px-3 fw-bold text-secondary" style="min-width: 70px;">
-                1 / {{ count($flashcards) }}
-            </div>
-            <button onclick="nextFlashcard()">
-                Tiếp <i class="fas fa-arrow-right"></i>
+        {{-- Nút Tiếp tục --}}
+        <div class="nav-controls d-flex justify-content-center align-items-center mt-4">
+            <button id="nextFlashcardBtn" class="btn btn-primary px-4">
+                Tiếp tục
             </button>
         </div>
 
