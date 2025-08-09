@@ -1,4 +1,4 @@
-<h3 class="mb-3">📘 Khái niệm / Định nghĩa</h3>
+<h3 class="mb-2">📘 Khái niệm / Định nghĩa</h3>
 <div class="row g-3">
     @forelse ($define_data as $item)
         @php

@@ -51,7 +51,9 @@ Route::middleware(['auth:sanctum', 'is_admin'])->prefix('admin')->group(function
 
     // --- 2. Flashcard Moderation ---
     Route::get('/flashcards', [FlashcardModerationController::class, 'index']);
+    Route::get('/flashcards/{id}/detail', [FlashcardModerationController::class, 'showDetail']); // thêm dòng này
     Route::post('/flashcards/{id}/approve', [FlashcardModerationController::class, 'approve']);
+    Route::post('/flashcards/{id}/reject', [FlashcardModerationController::class, 'reject']); // thêm
     Route::delete('/flashcards/{id}', [FlashcardModerationController::class, 'destroy']);
 
     // --- 3. System Statistics ---

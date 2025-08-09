@@ -64,6 +64,12 @@
                         <td>{{ card.author }}</td>
                         <td v-if="filterStatus === 'pending'">
                             <button
+                                class="btn btn-sm btn-outline-primary me-2"
+                                @click="openDetailModal(card.id)"
+                            >
+                                👁 Xem
+                            </button>
+                            <button
                                 class="btn btn-sm btn-outline-success"
                                 @click="approveFlashcard(card.id)"
                             >
@@ -162,6 +168,113 @@
                 ></button>
             </div>
         </div>
+
+        <!-- Modal xem chi tiết -->
+        <div class="modal fade" id="detailModal" tabindex="-1">
+            <div
+                class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
+            >
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title fw-bold">
+                            <i class="bi bi-card-list me-2"></i> Chi tiết bộ
+                            flashcard
+                        </h5>
+                        <button
+                            type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                        ></button>
+                    </div>
+
+                    <div class="modal-body" v-if="detailCard">
+                        <!-- Thông tin chung -->
+                        <div class="mb-4">
+                            <h4 class="fw-semibold text-primary">
+                                {{ detailCard.title }}
+                            </h4>
+                            <p class="text-muted">
+                                {{ detailCard.description || "Không có mô tả" }}
+                            </p>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p>
+                                        <strong>Môn học:</strong>
+                                        {{
+                                            detailCard.subject ||
+                                            "Chưa xác định"
+                                        }}
+                                    </p>
+                                    <p>
+                                        <strong>Chủ đề:</strong>
+                                        {{
+                                            detailCard.topic || "Chưa xác định"
+                                        }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p>
+                                        <strong>Người tạo:</strong>
+                                        {{ detailCard.author || "Không rõ" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <!-- Danh sách câu hỏi -->
+                        <div
+                            v-for="(c, idx) in detailCard.cards"
+                            :key="idx"
+                            class="mb-4 p-3 border rounded bg-light"
+                        >
+                            <p class="mb-2">
+                                <strong>Câu hỏi {{ idx + 1 }}:</strong>
+                                {{ c.question }}
+                            </p>
+                            <ul class="list-unstyled">
+                                <li
+                                    v-for="(a, ai) in c.answers"
+                                    :key="ai"
+                                    class="mb-1"
+                                >
+                                    <i
+                                        class="bi bi-circle-fill me-1 text-secondary"
+                                        style="font-size: 0.6rem"
+                                    ></i>
+                                    {{ a.content }}
+                                    <span
+                                        v-if="a.is_correct"
+                                        class="badge bg-success ms-2"
+                                        >Đúng</span
+                                    >
+                                </li>
+                            </ul>
+                            <div v-if="c.image" class="mt-2">
+                                <img
+                                    :src="c.image"
+                                    class="img-thumbnail"
+                                    style="max-width: 200px"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            <i class="bi bi-x-circle"></i> Đóng
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </template>
 
@@ -193,6 +306,7 @@ export default {
             selectedCard: null, // Lưu trữ flashcard đang được chọn để thực hiện hành động (ví dụ: xóa).
             filterStatus: "pending", // Trạng thái lọc flashcard hiện tại: 'pending' (chờ duyệt) hoặc 'approved' (đã duyệt).
             searchQuery: "", // Truy vấn tìm kiếm.
+            detailCard: null,
         };
     },
 
@@ -350,6 +464,25 @@ export default {
             } finally {
                 // Đặt hẹn giờ để ẩn thông báo toast sau 3 giây.
                 setTimeout(() => (this.toastMessage = ""), 3000);
+            }
+        },
+
+        async openDetailModal(id) {
+            try {
+                const token = localStorage.getItem("admin_token");
+                const res = await fetch(`/api/admin/flashcards/${id}/detail`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) throw new Error();
+                this.detailCard = await res.json();
+
+                const modal = new bootstrap.Modal(
+                    document.getElementById("detailModal")
+                );
+                modal.show();
+            } catch (e) {
+                this.toastMessage = "Không thể tải chi tiết flashcard.";
+                this.toastSuccess = false;
             }
         },
     },

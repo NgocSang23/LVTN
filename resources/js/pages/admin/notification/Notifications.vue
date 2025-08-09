@@ -47,7 +47,7 @@
                         class="d-flex justify-content-between align-items-center mb-2"
                     >
                         <h5 class="text-dark fw-semibold m-0">
-                            📋 Danh sách thông báo đã gửi
+                            📋 Danh sách thông báo
                         </h5>
                         <button
                             class="btn btn-sm btn-outline-danger"

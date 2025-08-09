@@ -131,24 +131,24 @@
         }
 
         // 🌐 Hiển thị mã QR trong modal với đường link cần chia sẻ
-        function showQrModal(link) {
-            // Lấy thẻ chứa QR code trong modal
-            const qrContainer = document.getElementById("qrcode-container");
+        // function showQrModal(link) {
+        //     // Lấy thẻ chứa QR code trong modal
+        //     const qrContainer = document.getElementById("qrcode-container");
 
-            // Xoá mã QR cũ nếu đã có (để tránh chồng lặp)
-            qrContainer.innerHTML = "";
+        //     // Xoá mã QR cũ nếu đã có (để tránh chồng lặp)
+        //     qrContainer.innerHTML = "";
 
-            // Tạo mã QR mới với liên kết truyền vào
-            new QRCode(qrContainer, {
-                text: link, // Đường link sẽ được mã hoá thành mã QR
-                width: 200, // Chiều rộng mã QR
-                height: 200 // Chiều cao mã QR
-            });
+        //     // Tạo mã QR mới với liên kết truyền vào
+        //     new QRCode(qrContainer, {
+        //         text: link, // Đường link sẽ được mã hoá thành mã QR
+        //         width: 200, // Chiều rộng mã QR
+        //         height: 200 // Chiều cao mã QR
+        //     });
 
-            // Hiển thị modal chứa mã QR
-            const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
-            qrModal.show();
-        }
+        //     // Hiển thị modal chứa mã QR
+        //     const qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
+        //     qrModal.show();
+        // }
 
         // 📤 Chia sẻ Facebook: mở cửa sổ popup để chia sẻ đường link
         // function shareFacebook(link) {

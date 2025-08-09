@@ -23,6 +23,37 @@
     <div class="container py-4">
         <h1 class="mb-4">📊 Kết quả học tập của bạn</h1>
 
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 rounded-4 p-3 text-center">
+                    <h6>Thẻ đã học</h6>
+                    <h4>{{ $stats['learnedCards'] }} / {{ $stats['totalCards'] }}</h4>
+                    <small>{{ $stats['completionRate'] }}% hoàn thành</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 rounded-4 p-3 text-center">
+                    <h6>Bài kiểm tra</h6>
+                    <h4>{{ $stats['totalTests'] }}</h4>
+                    <small>Điểm TB: {{ $stats['avgScore'] }}</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 rounded-4 p-3 text-center">
+                    <h6>Độ chính xác</h6>
+                    <h4>{{ $stats['accuracyRate'] }}%</h4>
+                    <small>T/g trung bình: {{ $stats['avgTimePerQuestion'] }} giây/câu</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 rounded-4 p-3 text-center">
+                    <h6>Thẻ khó</h6>
+                    <h4>{{ $stats['difficultCount'] }}</h4>
+                    <small>Cần ôn lại</small>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabs -->
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
@@ -44,6 +75,7 @@
             <input type="hidden" name="tab" value="{{ $activeTab }}">
             <div class="col-md-3">
                 <select name="sort" class="form-select">
+                    <option value="all" {{ request('sort') == 'all' ? 'selected' : '' }}>Tất cả</option>
                     <option value="new" {{ request('sort') == 'new' ? 'selected' : '' }}>Mới nhất</option>
                     <option value="old" {{ request('sort') == 'old' ? 'selected' : '' }}>Cũ nhất</option>
                 </select>

@@ -14,9 +14,9 @@
                 <span id="copiedBadge" class="badge bg-success ms-2 d-none">Đã sao chép!</span>
             </button>
 
-            <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#qrModal">
+            {{-- <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#qrModal">
                 <i class="fas fa-qrcode"></i> Mã QR chia sẻ
-            </button>
+            </button> --}}
 {{--
             <button class="btn btn-outline-primary" id="fbShareBtn">
                 <i class="fab fa-facebook"></i> Chia sẻ Facebook
@@ -90,18 +90,18 @@
             }
 
             // QR Code khi mở modal
-            const qrModal = document.getElementById("qrModal");
-            if (qrModal) {
-                qrModal.addEventListener("shown.bs.modal", function() {
-                    const qrContainer = document.getElementById("qrcode");
-                    qrContainer.innerHTML = "";
-                    new QRCode(qrContainer, {
-                        text: fullUrl,
-                        width: 180,
-                        height: 180
-                    });
-                });
-            }
+            // const qrModal = document.getElementById("qrModal");
+            // if (qrModal) {
+            //     qrModal.addEventListener("shown.bs.modal", function() {
+            //         const qrContainer = document.getElementById("qrcode");
+            //         qrContainer.innerHTML = "";
+            //         new QRCode(qrContainer, {
+            //             text: fullUrl,
+            //             width: 180,
+            //             height: 180
+            //         });
+            //     });
+            // }
 
             // // Chia sẻ Facebook
             // document.getElementById("fbShareBtn")?.addEventListener("click", function() {

@@ -9,65 +9,52 @@ use NumberFormatter;
 
 class Ochat
 {
-    // Gửi prompt đến AI và xử lý phản hồi JSON
+    protected TogetherClient $client;
+
+    public function __construct()
+    {
+        $this->client = new TogetherClient();
+    }
+
+    /**
+     * Gửi prompt đến AI, nhận phản hồi, cache kết quả và xử lý JSON.
+     */
     public function send(string $message)
     {
         try {
-            // Tạo cache key duy nhất cho mỗi message
             $cacheKey = 'ai_response_' . md5($message);
-            Log::info("🔑 Cache key: $cacheKey");
-
-            // Kiểm tra xem kết quả đã được cache chưa
             if ($cachedResponse = Cache::get($cacheKey)) {
                 Log::info("📦 Lấy phản hồi từ cache", ['key' => $cacheKey]);
                 return $cachedResponse;
             }
 
-            $start = microtime(true); // Thời gian bắt đầu
+            $start = microtime(true);
+            $rawResponse = $this->client->chat($message);
+            $elapsed = round(microtime(true) - $start, 3);
 
-            // Gửi prompt đến mô hình AI với các tùy chọn
-            $response = Ollama::model('llama3.2')
-                ->prompt($message)
-                ->options([
-                    'temperature' => 0.1, // Giảm độ ngẫu nhiên → chính xác hơn
-                    'num_predict' => 120, // Dự đoán nhiều token hơn để tránh cắt
-                    'keep_alive' => '5m',
-                ])
-                ->ask();
+            Log::info("⏱️ Together API phản hồi trong {$elapsed}s");
+            Log::info("🧠 Raw response: " . $rawResponse);
 
-            $elapsed = round(microtime(true) - $start, 3); // Thời gian phản hồi
+            if (empty($rawResponse)) {
+                return ['error' => 'AI không trả về nội dung.'];
+            }
 
-            // Ghi log thông tin phản hồi từ AI
-            Log::info("🧠 AI Raw Response: " . json_encode($response));
-            Log::info("⏱️ Thời gian xử lý AI:", [
-                'seconds' => $elapsed,
-                'eval' => round(($response['eval_duration'] ?? 0) / 1e9, 3),
-                'prompt_eval' => round(($response['prompt_eval_duration'] ?? 0) / 1e9, 3),
-                'load' => round(($response['load_duration'] ?? 0) / 1e9, 3),
-            ]);
-
-            $aiRawText = $response['response'] ?? '';
-
-            // Tách phần JSON từ phản hồi (nếu AI có thêm giải thích ngoài JSON)
-            $jsonText = $this->stripExtraText($aiRawText);
-
-            // Nếu không tìm thấy JSON → trả lỗi
+            $jsonText = $this->stripExtraText($rawResponse);
             if (!$jsonText) {
                 return ['error' => 'Phản hồi từ AI không đúng định dạng JSON'];
             }
 
-            // Nếu JSON bị thiếu dấu } → thêm vào
-            if ($jsonText && substr(trim($jsonText), -1) !== '}') {
+            // Đảm bảo kết thúc JSON đúng dấu }
+            $jsonText = rtrim($jsonText);
+            if (substr($jsonText, -1) !== '}') {
                 $jsonText .= '}';
             }
 
-            // Kiểm tra JSON có hợp lệ không
-            if (!$jsonText || !$this->isJson($jsonText)) {
+            if (!$this->isJson($jsonText)) {
                 Log::warning("⚠️ JSON không hợp lệ sau khi xử lý", ['text' => $jsonText]);
                 return ['error' => 'Phản hồi từ AI không đúng định dạng JSON'];
             }
 
-            // Decode phản hồi JSON thành array
             $aiAnswer = json_decode($jsonText, true);
 
             // Bổ sung giá trị mặc định nếu thiếu
@@ -76,8 +63,8 @@ class Ochat
             $aiAnswer['category'] = in_array($aiAnswer['category'] ?? '', ['Chính xác', 'Một phần', 'Sai']) ? $aiAnswer['category'] : 'Sai';
             $aiAnswer['percent'] = is_numeric($aiAnswer['percent'] ?? null) ? $aiAnswer['percent'] : 0;
 
-            // Lưu vào cache trong 10 phút
-            Cache::put($cacheKey, $aiAnswer, 600);
+            Cache::put($cacheKey, $aiAnswer, 600); // Cache 10 phút
+
             return $aiAnswer;
         } catch (\Exception $e) {
             Log::error("❌ Lỗi gọi AI: " . $e->getMessage());
@@ -85,45 +72,47 @@ class Ochat
         }
     }
 
-    // So sánh câu trả lời người dùng và đáp án đúng, có thể dùng AI nếu cần
+    /**
+     * So sánh câu trả lời của người dùng với đáp án đúng, có thể gọi AI để chấm điểm.
+     */
     public function compareAnswer(string $question, string $userAnswer, string $correctAnswer, ?string $lastFeedback = null)
     {
         try {
-            // Chuẩn hoá các câu trả lời để so sánh
+            // Chuẩn hoá các câu trả lời
             $userAnswer = $this->normalizeAnswer($userAnswer);
             $correctAnswer = $this->normalizeAnswer($correctAnswer);
             $lastFeedback = $lastFeedback ? $this->normalizeAnswer($lastFeedback) : null;
 
-            // Nếu học sinh copy y chang phản hồi trước đó
+            // Kiểm tra trùng lặp với phản hồi trước
             if ($lastFeedback && similar_text($userAnswer, $lastFeedback, $similarityToFeedback) && $similarityToFeedback >= 95) {
                 return [
                     "percent" => 75,
                     "category" => "Trùng lặp gợi ý",
                     "feedback" => "Bạn đã sao chép gần như nguyên văn gợi ý. Hãy thử diễn đạt lại hoặc viết theo cách hiểu của bạn!",
                     "confidence" => 90,
-                    "correct_answer" => $correctAnswer
+                    "correct_answer" => $correctAnswer,
                 ];
             }
 
-            // Bỏ dấu '=' thừa (nếu có)
+            // Loại bỏ dấu '=' thừa
             $correctAnswer = ltrim($correctAnswer, '=');
 
-            // Chuyển đổi từ chữ số ra số (ex: “hai mươi” -> 20)
+            // Chuyển từ chữ số thành số thực
             $numericUserAnswer = $this->wordsToNumber($userAnswer);
             $numericCorrectAnswer = $this->wordsToNumber($correctAnswer);
 
-            // Nếu cả 2 đều là số và bằng nhau
+            // Nếu cả hai là số và bằng nhau
             if ($numericUserAnswer !== null && $numericCorrectAnswer !== null && $numericUserAnswer == $numericCorrectAnswer) {
                 return [
                     "percent" => 100,
                     "category" => "Chính xác",
                     "feedback" => "Câu trả lời hoàn toàn đúng!",
                     "confidence" => 100,
-                    "correct_answer" => $correctAnswer
+                    "correct_answer" => $correctAnswer,
                 ];
             }
 
-            // Tính độ tương đồng bằng `similar_text`
+            // Tính độ tương đồng chuỗi
             similar_text($userAnswer, $correctAnswer, $similarity);
 
             if ($similarity >= 85) {
@@ -132,7 +121,7 @@ class Ochat
                     "category" => "Chính xác",
                     "feedback" => "Câu trả lời hoàn toàn chính xác!",
                     "confidence" => 100,
-                    "correct_answer" => $correctAnswer
+                    "correct_answer" => $correctAnswer,
                 ];
             } elseif ($similarity >= 60) {
                 return [
@@ -140,11 +129,11 @@ class Ochat
                     "category" => "Một phần",
                     "feedback" => "Câu trả lời gần đúng, bạn nên bổ sung thêm ý cho đầy đủ hơn.",
                     "confidence" => 85,
-                    "correct_answer" => $correctAnswer
+                    "correct_answer" => $correctAnswer,
                 ];
             }
 
-            // Tính phần trăm từ khoá trùng
+            // So sánh từ khoá chung
             $correctWords = array_unique(preg_split('/\P{L}+/u', $correctAnswer, -1, PREG_SPLIT_NO_EMPTY));
             $userWords = array_unique(preg_split('/\P{L}+/u', $userAnswer, -1, PREG_SPLIT_NO_EMPTY));
             $commonWords = array_intersect($correctWords, $userWords);
@@ -156,37 +145,36 @@ class Ochat
                     "category" => "Một phần",
                     "feedback" => "Câu trả lời của bạn có một số ý đúng, nhưng chưa đầy đủ.",
                     "confidence" => 70,
-                    "correct_answer" => $correctAnswer
+                    "correct_answer" => $correctAnswer,
                 ];
             }
 
-            // Nếu không khớp nhiều → gửi prompt cho AI để chấm điểm
+            // Gửi prompt cho AI nếu không khớp đủ
             $prompt = <<<EOT
-                Bạn là hệ thống đánh giá tự động. Hãy chấm điểm câu trả lời của học sinh và chỉ trả về đúng một object JSON hợp lệ, không có mẫu, không có giải thích.
+Bạn là hệ thống đánh giá tự động. Hãy chấm điểm câu trả lời của học sinh và chỉ trả về đúng một object JSON hợp lệ, không có mẫu, không có giải thích.
 
-                JSON phải có đầy đủ các trường sau:
-                {
-                "percent": 0-100,
-                "category": "Chính xác" | "Một phần" | "Sai",
-                "feedback": "Một câu ngắn, dưới 20 từ"
-                }
+JSON phải có đầy đủ các trường sau:
+{
+"percent": 0-100,
+"category": "Chính xác" | "Một phần" | "Sai",
+"feedback": "Một câu ngắn, dưới 20 từ"
+}
 
-                Chỉ được trả về JSON, không có bất kỳ giải thích nào bên ngoài. Không được thiếu dấu { hoặc }.
+Chỉ được trả về JSON, không có bất kỳ giải thích nào bên ngoài. Không được thiếu dấu { hoặc }.
 
-                Chỉ cho điểm 100 nếu học sinh trả lời đầy đủ nội dung trong đáp án. Nếu đúng một phần, cho 50 hoặc 75. Nếu sai hoàn toàn, cho 0.
+Chỉ cho điểm 100 nếu học sinh trả lời đầy đủ nội dung trong đáp án. Nếu đúng một phần, cho 50 hoặc 75. Nếu sai hoàn toàn, cho 0.
 
-                Câu hỏi: "$question"
-                Học sinh trả lời: "$userAnswer"
-                Đáp án đúng: "$correctAnswer"
-            EOT;
+Câu hỏi: "$question"
+Học sinh trả lời: "$userAnswer"
+Đáp án đúng: "$correctAnswer"
+EOT;
 
             $result = $this->send($prompt);
 
-            // Nếu phản hồi hợp lệ từ AI
             if (isset($result['percent'])) {
                 $result['correct_answer'] = $correctAnswer;
 
-                // Tính độ tin cậy (confidence) dựa trên nhiều yếu tố
+                // Tính confidence dựa trên các chỉ số
                 $result['confidence'] = round(
                     0.5 * ($similarity ?? 0) +
                         0.3 * ($keywordMatchPercentage ?? 0) +
@@ -203,16 +191,20 @@ class Ochat
         }
     }
 
-    // Chuẩn hoá câu trả lời: viết thường, xoá khoảng trắng, chuyển số nếu cần
-    private function normalizeAnswer(string $answer)
+    /**
+     * Chuẩn hoá câu trả lời: viết thường, xoá khoảng trắng thừa, chuyển số nếu có.
+     */
+    private function normalizeAnswer(string $answer): string
     {
-        $answer = trim(strtolower($answer));
+        $answer = trim(mb_strtolower($answer));
         $answer = preg_replace('/\s+/', ' ', $answer);
         return is_numeric($answer) ? (string)(float)$answer : $answer;
     }
 
-    // Chuyển chữ thành số: ví dụ “hai mươi” → 20
-    private function wordsToNumber($words)
+    /**
+     * Chuyển chuỗi chữ số thành số thực, hỗ trợ nhiều locale.
+     */
+    private function wordsToNumber(string $words): ?float
     {
         $words = str_replace(['bằng', '='], '', $words);
         $words = trim($words);
@@ -233,27 +225,30 @@ class Ochat
         return null;
     }
 
-    // Kiểm tra chuỗi có phải JSON hợp lệ không
-    private function isJson($string)
+    /**
+     * Kiểm tra chuỗi có phải JSON hợp lệ.
+     */
+    private function isJson(string $string): bool
     {
         json_decode($string);
         return json_last_error() === JSON_ERROR_NONE;
     }
 
-    // Tách phần JSON từ đoạn phản hồi có thể lẫn text
+    /**
+     * Tách phần JSON ra khỏi đoạn text có thể lẫn text khác.
+     */
     private function stripExtraText(string $text): string
     {
-        // Tìm đoạn JSON bằng regex
+        // Regex đệ quy tìm JSON hợp lệ
         if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $text, $matches)) {
             return $matches[0];
         }
 
-        // Nếu không có, cố gắng tìm { và thêm } thủ công
+        // Nếu không tìm thấy, thử cắt từ dấu { và thêm } nếu thiếu
         $start = strpos($text, '{');
         if ($start !== false) {
             $substr = substr($text, $start);
 
-            // Đếm số ngoặc
             $open = substr_count($substr, '{');
             $close = substr_count($substr, '}');
 
@@ -261,7 +256,6 @@ class Ochat
                 $substr .= str_repeat('}', $open - $close);
             }
 
-            // Kiểm tra lại tính hợp lệ
             if ($this->isJson($substr)) {
                 return $substr;
             }

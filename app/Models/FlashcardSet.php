@@ -42,6 +42,8 @@ class FlashcardSet extends Model
         'description',
         'question_ids',
         'is_public',
+        'is_approved',
+        'slug',
         'user_id',
     ];
 

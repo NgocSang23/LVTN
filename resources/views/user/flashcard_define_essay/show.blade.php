@@ -87,7 +87,7 @@
             {{-- Bài kiểm tra nâng cao --}}
             <div class="container mb-4">
                 @php
-                    $encodedIds = base64_encode(implode(',', $cards->pluck('id')->toArray()));
+                    $encodedIds = base64_encode(implode(',', $cards->pluck('card_id')->toArray()));
                 @endphp
 
                 <div class="row g-3"> {{-- BỎ justify-content-center --}}
@@ -164,7 +164,7 @@
                                     <div class="col-8">
                                         <div class="answer-scroll text-center px-2 d-flex justify-content-center align-items-center gap-2"
                                             style="max-height: 180px; overflow-y: auto;">
-                                            <p class="fw-semibold fs-5 answer_content mb-0 text-success"></p>
+                                            <p class="fw-semibold fs-5 answer_content mb-0 text-dark"></p>
                                         </div>
                                     </div>
                                     <div class="col-4">

@@ -11,10 +11,10 @@ class FlashcardSetController extends Controller
 {
     public function createFromCards(Request $request)
     {
-        $cardIds = $request->input('card_ids'); // Mảng ID
+        $cardIds = $request->input('card_ids');
         $user = auth()->user();
 
-        // ✅ Kiểm tra quyền sở hữu
+        // Kiểm tra quyền sở hữu
         foreach ($cardIds as $cardId) {
             $card = \App\Models\Card::find($cardId);
             if (!$card || $card->user_id !== $user->id) {
@@ -22,26 +22,42 @@ class FlashcardSetController extends Controller
             }
         }
 
-        // ✅ Kiểm tra trùng lặp
-        $existingSet = FlashcardSet::where('user_id', $user->id)
-            ->where('question_ids', implode(',', $cardIds))
+        $idsString = implode(',', $cardIds);
+
+        // Tìm xem đã có set này chưa
+        $set = FlashcardSet::where('user_id', $user->id)
+            ->where('question_ids', $idsString)
             ->first();
 
-        if ($existingSet) {
-            return redirect()->route('flashcard.share', ['slug' => $existingSet->slug]);
+        if ($set) {
+            // Nếu đã có, thì cập nhật để đảm bảo public và chưa duyệt
+            $set->update([
+                'is_public' => true,
+                'is_approved' => false,
+            ]);
+        } else {
+            // Nếu chưa có, tạo mới
+            $set = FlashcardSet::create([
+                'title' => 'Bộ thẻ chia sẻ',
+                'description' => 'Bộ thẻ được chia sẻ công khai (đang chờ duyệt).',
+                'question_ids' => $idsString,
+                'is_public' => true,
+                'is_approved' => false,
+                'user_id' => $user->id,
+                'slug' => 'bo-the-' . uniqid(),
+            ]);
         }
 
-        // ✅ Tạo mới (có slug)
-        $set = FlashcardSet::create([
-            'title' => 'Bộ thẻ chia sẻ',
-            'description' => 'Bộ thẻ được chia sẻ công khai.',
-            'question_ids' => implode(',', $cardIds),
-            'is_public' => true,
-            'user_id' => $user->id,
-            'slug' => 'bo-the-' . uniqid(), // tạo slug duy nhất
-        ]);
+        // Gửi thông báo cho admin (dù là mới hay cập nhật)
+        \App\Models\User::where('roles', 'admin')->each(function ($admin) use ($set, $user) {
+            $admin->notifications()->create([
+                'title' => '📢 Yêu cầu duyệt flashcard mới',
+                'message' => $user->name . ' đã gửi yêu cầu chia sẻ công khai bộ "' . $set->title . '".',
+                'link' => url('/admin/flashcards')
+            ]);
+        });
 
-        return redirect()->route('flashcard.share', ['slug' => $set->slug]);
+        return redirect()->back()->with('success', 'Yêu cầu chia sẻ đã được gửi, đang chờ duyệt.');
     }
 
     public function store(Request $request)
@@ -93,7 +109,10 @@ class FlashcardSetController extends Controller
     // Dùng để chia sẻ công khai qua slug
     public function publicView($slug)
     {
-        $set = FlashcardSet::where('slug', $slug)->where('is_public', 1)->first();
+        $set = FlashcardSet::where('slug', $slug)
+            ->where('is_public', 1)
+            ->where('is_approved', 1) // ✅ chỉ công khai khi đã duyệt
+            ->first();
 
         if (!$set) {
             abort(404, 'Không tìm thấy bộ flashcard hoặc bộ này không được chia sẻ.');

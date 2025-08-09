@@ -23,13 +23,23 @@
                         📋 Sao chép liên kết
                     </a>
                 </li>
-                <li>
+                {{-- <li>
                     <a class="dropdown-item w-100 text-start" href="#"
                         onclick="showQrModal('{{ route('user.flashcard_define_essay', ['ids' => $encodedIds]) }}')">
                         🌐 Tạo mã QR
                     </a>
-                </li>
-                @if (empty($card_define['first_card']->flashcardSet?->slug))
+                </li> --}}
+                @if (
+                    !empty($card_define['first_card']->flashcardSet) &&
+                        $card_define['first_card']->flashcardSet->is_public &&
+                        $card_define['first_card']->flashcardSet->is_approved)
+                    <li>
+                        <a class="dropdown-item text-success w-100 text-start"
+                            href="{{ route('flashcard.share', ['slug' => $card_define['first_card']->flashcardSet->slug]) }}">
+                            🔗 Xem chia sẻ công khai
+                        </a>
+                    </li>
+                @else
                     <li>
                         <form method="POST" action="{{ route('flashcard.share.create') }}">
                             @csrf
@@ -40,13 +50,6 @@
                                 🌍 Chia sẻ công khai
                             </button>
                         </form>
-                    </li>
-                @else
-                    <li>
-                        <a class="dropdown-item text-success w-100 text-start"
-                            href="{{ route('flashcard.share', ['slug' => $card_define['first_card']->flashcardSet->slug]) }}">
-                            🔗 Xem chia sẻ công khai
-                        </a>
                     </li>
                 @endif
             </ul>
@@ -59,7 +62,7 @@
                 <img src="{{ asset('assets/img/card_define.jpg') }}" alt="Icon"
                     class="rounded-circle bg-primary p-1" width="50" height="50" style="object-fit: cover;">
                 <div class="ms-3">
-                    <h5 class="mb-1 fw-semibold text-truncate">
+                    <h5 class="mb-1 fw-semibold d-block text-truncate" style="max-width: 200px;">
                         {{ optional($card_define['first_card']->question->topic)->title ?? 'Không có chủ đề' }}
                     </h5>
                     <small class="text-muted d-block">📄 Số thẻ: {{ $cardCount }}</small>

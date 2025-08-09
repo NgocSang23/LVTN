@@ -25,12 +25,6 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    // --- Xử lý sự kiện khi người dùng cố gắng rời khỏi trang ---
-    // Hàm này sẽ hiển thị một thông báo cảnh báo tiêu chuẩn của trình duyệt
-    // nếu người dùng cố gắng đóng tab/cửa sổ hoặc điều hướng đi nơi khác.
-    window.onbeforeunload = () =>
-        "Bạn có chắc muốn rời khỏi bài kiểm tra? Dữ liệu chưa lưu sẽ bị mất.";
-
     // --- Khởi tạo trạng thái bài kiểm tra ---
     let currentIndex = 0; // Biến theo dõi chỉ số của câu hỏi hiện tại (bắt đầu từ 0).
     // Mảng `answers` sẽ lưu trữ câu trả lời của người dùng cho mỗi câu hỏi.

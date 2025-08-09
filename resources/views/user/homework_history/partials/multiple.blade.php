@@ -1,5 +1,5 @@
 <div class="mb-4">
-    <h2 class="h4 mb-4">🧠 Bài kiểm tra đã làm</h2>
+    <h3 class="mb-2">🧠 Bài kiểm tra đã làm</h3>
     <div class="row g-4">
         @forelse ($multiple_data as $item)
             <div class="col-12 col-sm-6 col-lg-4">

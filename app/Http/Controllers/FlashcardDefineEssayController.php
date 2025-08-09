@@ -175,13 +175,28 @@ class FlashcardDefineEssayController extends Controller
                 'answeruser_content.required' => 'Xin nhập câu trả lời'
             ]);
 
-            $answerUser = new AnswerUser();
-            $answerUser->content = $data['answeruser_content'];
-            $answerUser->question_id = $data['question_id'];
-            $answerUser->user_id = Auth::guard('web')->user()->id;
+            $userId = Auth::guard('web')->user()->id;
+            $questionId = $data['question_id'];
+
+            // Tìm bản ghi trả lời cũ của user cho câu hỏi này
+            $answerUser = AnswerUser::where('user_id', $userId)
+                ->where('question_id', $questionId)
+                ->first();
+
+            if ($answerUser) {
+                // Nếu đã có trả lời, cập nhật lại content
+                $answerUser->content = $data['answeruser_content'];
+            } else {
+                // Tạo mới nếu chưa có
+                $answerUser = new AnswerUser();
+                $answerUser->user_id = $userId;
+                $answerUser->question_id = $questionId;
+                $answerUser->content = $data['answeruser_content'];
+            }
             $answerUser->save();
 
-            $question = Question::with('answers')->find($data['question_id']);
+            // Lấy câu hỏi kèm đáp án
+            $question = Question::with('answers')->find($questionId);
 
             if (!$question) {
                 return response()->json(['error' => 'Câu hỏi không hợp lệ'], 400);
@@ -190,7 +205,7 @@ class FlashcardDefineEssayController extends Controller
             $correctAnswer = $question->answers->first()->content ?? 'Không có đáp án';
 
             $chatbot = new Ochat();
-            $start = microtime(true); // ⏱️ Bắt đầu đo thời gian
+            $start = microtime(true);
 
             $response = $chatbot->compareAnswer(
                 $question->content,
@@ -198,9 +213,8 @@ class FlashcardDefineEssayController extends Controller
                 $correctAnswer
             );
 
-            $end = microtime(true); // ⏱️ Kết thúc đo thời gian
+            $end = microtime(true);
             Log::info("⏱️ Thời gian xử lý AI:", ['seconds' => round($end - $start, 3)]);
-
             Log::info("Gửi tới AI:", [
                 'question' => $question->content,
                 'user_answer' => $data['answeruser_content'],
@@ -242,7 +256,12 @@ class FlashcardDefineEssayController extends Controller
             ->join('questions', 'cards.id', '=', 'questions.card_id')
             ->join('users', 'cards.user_id', '=', 'users.id')
             ->join('topics', 'questions.topic_id', '=', 'topics.id')
-            ->select('cards.*', 'questions.*')
+            ->select(
+                'cards.id as card_id',
+                'questions.id as question_id',
+                'cards.*',
+                'questions.*'
+            )
             ->where('questions.topic_id', $topicId)
             ->get();
 

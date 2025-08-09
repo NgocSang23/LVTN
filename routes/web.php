@@ -47,6 +47,8 @@ Route::middleware('guest')->group(function () {
 
 // ========== AUTH ROUTES ==========
 Route::middleware('auth')->prefix('user')->group(function () {
+    Route::view('/admin/flashcards', 'app')->name('admin.flashcards.pending');
+
     // User account
     Route::get('/logout', [UserController::class, 'logout'])->name('user.logout');
     Route::get('/profile', [UserController::class, 'profile'])->name('user.profile');
