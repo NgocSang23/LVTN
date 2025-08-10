@@ -17,7 +17,7 @@
             {{-- <button class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#qrModal">
                 <i class="fas fa-qrcode"></i> Mã QR chia sẻ
             </button> --}}
-{{--
+            {{--
             <button class="btn btn-outline-primary" id="fbShareBtn">
                 <i class="fab fa-facebook"></i> Chia sẻ Facebook
             </button>
@@ -27,7 +27,8 @@
             </button> --}}
 
             @if (count(explode(',', $set->question_ids)) > 4)
-                <a href="{{ route('game.study', base64_encode($set->question_ids)) }}" class="btn btn-success">
+                <a href="{{ route('user.flashcard_define_essay', base64_encode($set->question_ids)) }}"
+                    class="btn btn-success">
                     <i class="fas fa-play"></i> Bắt đầu ôn tập
                 </a>
             @endif
@@ -72,20 +73,22 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            const fullUrl = window.location.origin + window.location.pathname;
-
-            // Sao chép liên kết
             const copyBtn = document.getElementById("copyLinkBtn");
             const copiedBadge = document.getElementById("copiedBadge");
 
             if (copyBtn && copiedBadge) {
                 copyBtn.addEventListener("click", function() {
-                    navigator.clipboard.writeText(fullUrl).then(() => {
-                        copiedBadge.classList.remove("d-none");
-                        setTimeout(() => {
-                            copiedBadge.classList.add("d-none");
-                        }, 2000);
-                    }).catch(console.error);
+                    const startStudyBtn = document.querySelector('a.btn.btn-success');
+                    if (startStudyBtn) {
+                        const linkToCopy = startStudyBtn.href;
+
+                        navigator.clipboard.writeText(linkToCopy).then(() => {
+                            copiedBadge.classList.remove("d-none");
+                            setTimeout(() => {
+                                copiedBadge.classList.add("d-none");
+                            }, 2000);
+                        }).catch(console.error);
+                    }
                 });
             }
 

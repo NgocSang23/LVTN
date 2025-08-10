@@ -28,13 +28,13 @@ class UserController extends Controller
             ->toArray();
 
         // Lấy toàn bộ các thẻ có câu hỏi và topic
-        $all_cards = Card::with(['question.topic.subject', 'user'])
+        $all_cards = Card::with(['question.topic.subject', 'user', 'flashcardSet'])
             ->whereHas('question')
             ->latest()
             ->get()
             ->filter(fn($card) => $card->question && $card->question->topic);
 
-        // 👉 "Thẻ của bạn" - KHÔNG cần phải công khai mới hiện
+        // Thẻ của bạn — tất cả thẻ bạn tạo, public hay không public
         $my_flashcards = $all_cards->filter(fn($card) => $card->user_id === $userId)
             ->groupBy(fn($card) => $card->question->topic->id)
             ->map(fn($group) => [
@@ -44,12 +44,8 @@ class UserController extends Controller
             ])
             ->take(6);
 
-        // 👉 "Từ cộng đồng" - chỉ hiển thị các thẻ công khai
-        $community_flashcards = $all_cards->filter(
-            fn($card) =>
-            $card->user_id !== $userId &&
-                in_array($card->id, $public_card_ids)
-        )
+        // Tất cả flashcard công khai (của tất cả user, bao gồm cả user hiện tại)
+        $community_flashcards = $all_cards->filter(fn($card) => in_array($card->id, $public_card_ids))
             ->groupBy(fn($card) => $card->question->topic->id)
             ->map(fn($group) => [
                 'first_card' => $group->first(),

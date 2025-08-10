@@ -39,7 +39,7 @@
                             🔗 Xem chia sẻ công khai
                         </a>
                     </li>
-                @else
+                @elseif ($card_define['first_card']->user_id === auth()->id())
                     <li>
                         <form method="POST" action="{{ route('flashcard.share.create') }}">
                             @csrf
@@ -67,7 +67,12 @@
                     </h5>
                     <small class="text-muted d-block">📄 Số thẻ: {{ $cardCount }}</small>
                     <small class="text-muted d-block">👤 Tác giả:
-                        {{ $card_define['first_card']->user->name ?? 'Ẩn danh' }}</small>
+                        @if ($card_define['first_card']->user->id === auth()->id())
+                            Bạn
+                        @else
+                            {{ $card_define['first_card']->user->name ?? 'Ẩn danh' }}
+                        @endif
+                    </small>
                     <small class="text-muted d-block">📅 Ngày tạo:
                         {{ $card_define['first_card']->created_at->format('Y-m-d') }}</small>
                 </div>

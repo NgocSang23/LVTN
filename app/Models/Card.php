@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property int $user_id
@@ -50,7 +50,17 @@ class Card extends Model
 
     public function flashcardSet()
     {
-        return $this->hasOne(FlashcardSet::class, 'question_ids')
-            ->whereRaw('FIND_IN_SET(?, question_ids)', [$this->id]);
+        return $this->belongsTo(FlashcardSet::class, 'id', 'id') // fake để Eloquent cho phép
+            ->whereRaw("FIND_IN_SET(?, question_ids)", [$this->question?->id]);
+    }
+
+    public function getFlashcardSetAttribute()
+    {
+        return FlashcardSet::where('is_public', 1)
+            ->where('is_approved', 1)
+            ->get()
+            ->first(function ($set) {
+                return in_array($this->question?->id, explode(',', $set->question_ids));
+            });
     }
 }
