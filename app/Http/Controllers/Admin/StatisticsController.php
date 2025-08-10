@@ -22,18 +22,22 @@ class StatisticsController extends Controller
         // Đếm tổng số bộ flashcard (FlashcardSet)
         $totalSets = FlashcardSet::count();
 
-        // 🔍 Phân tích số thẻ đã/không nằm trong bộ flashcard
-        $usedCardIds = FlashcardSet::pluck('question_ids') // Lấy ra danh sách `question_ids` (kiểu chuỗi: "1,2,3")
-            ->flatMap(fn($ids) => explode(',', $ids))       // Tách chuỗi thành mảng các ID
-            ->unique()                                      // Loại bỏ các ID trùng nhau
-            ->filter()                                      // Loại bỏ các phần tử rỗng/null
-            ->map(fn($id) => (int) $id);                    // Chuyển về kiểu số nguyên
+        // Lấy danh sách ID thẻ tồn tại trong bảng cards
+        $existingCardIds = Card::pluck('id')->toArray();
+
+        // 🔍 Lấy tất cả question_ids trong flashcard_sets, tách thành mảng, lọc trống, unique và chỉ giữ ID tồn tại
+        $usedCardIds = FlashcardSet::pluck('question_ids')
+            ->flatMap(fn($ids) => explode(',', $ids))
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => in_array($id, $existingCardIds)) // ✅ Chỉ giữ ID có thật
+            ->unique()
+            ->values();
 
         // Đếm số thẻ đã nằm trong ít nhất một FlashcardSet
         $usedCardsCount = $usedCardIds->count();
 
-        // Đếm số thẻ chưa được sử dụng trong bất kỳ bộ nào
-        $unusedCardsCount = $totalCards - $usedCardsCount;
+        // Đếm số thẻ chưa được sử dụng trong bất kỳ bộ nào (đảm bảo >= 0)
+        $unusedCardsCount = max(0, $totalCards - $usedCardsCount);
 
         // 📊 Đếm lượt ôn tập từ bảng answer_users (click thẻ)
         $reviewFromFlipping = AnswerUser::count();
