@@ -23,7 +23,8 @@
         @csrf
         <div class="input-group">
             <input name="search" id="instantSearchInput" type="text" class="form-control bg-light border-0 small"
-                placeholder="Tìm kiếm theo chủ đề, môn học..." aria-label="Search" aria-describedby="basic-addon2" autocomplete="off">
+                placeholder="Tìm kiếm theo chủ đề, môn học..." aria-label="Search" aria-describedby="basic-addon2"
+                autocomplete="off">
             <div class="input-group-append">
                 <button class="btn btn-primary" type="button" onclick="submitInstantSearch()">
                     <i class="fas fa-search fa-sm"></i>
@@ -52,11 +53,11 @@
                 </a>
                 @can('teacher')
                     <a class="dropdown-item" href="{{ route('classrooms.create') }}">Tạo lớp học</a>
-                    <a class="dropdown-item select-option"
-                        href="{{ auth()->check() ? route('flashcard_multiple_choice.create') : route('user.login') }}"
-                        data-value="multiple_choice">Tạo bài kiểm tra
-                    </a>
                 @endcan
+                <a class="dropdown-item select-option"
+                    href="{{ auth()->check() ? route('flashcard_multiple_choice.create') : route('user.login') }}"
+                    data-value="multiple_choice">Tạo bài kiểm tra
+                </a>
             </div>
         </li>
 
