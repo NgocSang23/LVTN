@@ -183,8 +183,6 @@ class FlashcardMultipleChoiceController extends Controller
         return view('user.flashcard_multiple_choice.show', compact('test'));
     }
 
-    public function edit(string $id) {}
-
     public function update(Request $request, string $id)
     {
         $data = $request->validate([

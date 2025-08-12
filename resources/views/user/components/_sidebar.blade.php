@@ -78,6 +78,14 @@
             <span>Tạo thẻ mới</span>
         </a>
     </li>
+    @can('teacher')
+        <li class="nav-item {{ request()->routeIs('classrooms.create') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('classrooms.create') }}">
+                <i class="fas fa-check-circle"></i> {{-- ✅ Trắc nghiệm --}}
+                <span>Tạo lớp học</span>
+            </a>
+        </li>
+    @endcan
     <li class="nav-item {{ request()->routeIs('flashcard_multiple_choice.create') ? 'active' : '' }}">
         <a class="nav-link" href="{{ route('flashcard_multiple_choice.create') }}">
             <i class="fas fa-check-circle"></i> {{-- ✅ Trắc nghiệm --}}

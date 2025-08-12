@@ -21,6 +21,7 @@ class UserController extends Controller
 
         // Lấy danh sách các card ID công khai từ FlashcardSet
         $public_card_ids = FlashcardSet::where('is_public', 1)
+            ->where('is_approved', 1)  // thêm điều kiện approved
             ->pluck('question_ids')
             ->flatMap(fn($ids) => explode(',', $ids))
             ->map(fn($id) => (int) trim($id))

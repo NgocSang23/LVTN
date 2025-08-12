@@ -34,7 +34,7 @@
                                     width="50" height="50" style="object-fit: cover;">
                                 <div class="ms-3">
                                     <h5 class="mb-1 fw-semibold text-truncate">
-                                        {{ optional($test->questionNumbers->first()->topic)->title ?? 'Không có' }}
+                                        {{ \Illuminate\Support\Str::limit(optional($test->questionNumbers->first()->topic)->title ?? 'Không có chủ đề', 25) }}
                                     </h5>
                                     <small class="text-muted d-block">⏱ Thời gian: {{ $test->time }} phút</small>
                                     <small class="text-muted d-block">❓ Số câu:

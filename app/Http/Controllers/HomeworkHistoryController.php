@@ -212,4 +212,33 @@ class HomeworkHistoryController extends Controller
             'difficultCount'     => $difficultCount
         ];
     }
+
+    public function saveHistory(Request $request)
+    {
+        $userId = Auth::id();
+
+        $validated = $request->validate([
+            'test_id' => 'required|integer|exists:tests,id',
+            'correct_count' => 'required|integer|min:0',
+            'total_questions' => 'required|integer|min:1',
+            'score' => 'required|numeric|min:0',
+            'time_spent' => 'required|string', // vd: "00:10:15" hoặc số giây
+        ]);
+
+        DB::table('histories')->insert([
+            'user_id' => $userId,
+            'test_id' => $validated['test_id'],
+            'correct_count' => $validated['correct_count'],
+            'total_questions' => $validated['total_questions'],
+            'score' => $validated['score'],
+            'time_spent' => $validated['time_spent'],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Lưu lịch sử nộp bài thành công',
+        ]);
+    }
 }

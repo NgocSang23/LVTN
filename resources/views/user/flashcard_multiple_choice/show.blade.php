@@ -491,7 +491,7 @@
                 formData.append("_token", csrfToken);
 
                 // Gửi dữ liệu qua fetch API
-                fetch("user/history/save", {
+                fetch("/user/history/save", {
                         method: "POST",
                         body: formData
                     })

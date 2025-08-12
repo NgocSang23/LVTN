@@ -85,7 +85,7 @@
                                     class="rounded-circle bg-primary p-1" width="50" height="50"
                                     style="object-fit: cover;">
                                 <div class="ms-3">
-                                    <h5 class="mb-1 fw-semibold text-truncate">
+                                    <h5 class="mb-1 fw-semibold d-block text-truncate" style="max-width: 200px;">
                                         {{ optional($card_define['first_card']->question->topic)->title ?? 'Không có chủ đề' }}
                                     </h5>
                                     <small class="text-muted d-block">
