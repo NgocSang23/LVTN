@@ -54,8 +54,14 @@ class UserController extends Controller
             ])
             ->take(6);
 
-        $tests = Test::with(['questionnumbers.topic', 'user'])->latest()->take(6)->get();
+        // Lấy bài kiểm tra do chính user hiện tại tạo
+        $tests = Test::with(['questionnumbers.topic', 'user'])
+            ->where('user_id', $userId)
+            ->latest()
+            ->take(6)
+            ->get();
 
+        // Lấy lớp của user nếu user là giáo viên, nếu không có thì rỗng
         $myClassrooms = [];
         if (auth()->check() && auth()->user()->roles === 'teacher') {
             $myClassrooms = ClassRoom::where('teacher_id', $userId)->get();
