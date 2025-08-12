@@ -488,7 +488,9 @@
                                             </div>
 
                                             <div class="mt-3 text-end">
-                                                <a href="{{ route('user.flashcard_define_essay', ['ids' => $set->question_ids]) }}"
+                                                <a href="{{ route('user.flashcard_define_essay', [
+                                                    'ids' => base64_encode($set->question_ids),
+                                                ]) }}"
                                                     class="btn btn-sm btn-outline-primary me-2">
                                                     <i class="fa-solid fa-eye me-1"></i> Xem bộ thẻ
                                                 </a>

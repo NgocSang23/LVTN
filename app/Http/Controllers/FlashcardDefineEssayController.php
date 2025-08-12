@@ -11,6 +11,7 @@ use App\Models\ClassroomFlashcard;
 use App\Models\DifficultCard;
 use App\Models\FlashcardSet;
 use App\Models\Image;
+use App\Models\Notification;
 use App\Models\Question;
 use App\Models\Subject;
 use App\Models\Topic;
@@ -95,12 +96,14 @@ class FlashcardDefineEssayController extends Controller
             }
         }
 
-        $questionIds = [];
+        $cardIds = [];
 
         foreach ($request->question_content as $index => $questionContent) {
             $card = new Card();
             $card->user_id = auth()->id();
             $card->save();
+
+            $cardIds[] = $card->id; // lưu card_id thay vì question_id
 
             $question = new Question();
             $question->content = $questionContent;
@@ -109,8 +112,6 @@ class FlashcardDefineEssayController extends Controller
             $question->card_id = $card->id;
             $question->topic_id = $topic->id;
             $question->save();
-
-            $questionIds[] = $question->id;
 
             $answer = new Answer();
             $answer->content = $request->answer_content[$index];
@@ -130,8 +131,38 @@ class FlashcardDefineEssayController extends Controller
             }
         }
 
-        $flashcardSet->question_ids = implode(',', $questionIds);
+        // Lưu danh sách card_ids thay vì question_ids
+        $flashcardSet->question_ids = implode(',', $cardIds);
         $flashcardSet->save();
+
+        // Gửi thông báo cho giáo viên và học sinh nếu có classroom
+        if (!empty($data['classroom_id'])) {
+            $classroom = ClassRoom::with('teacher')->find($data['classroom_id']);
+            $teacher   = $classroom->teacher ?? null;
+            $user      = auth()->user();
+
+            // Thông báo cho giáo viên (nếu không phải người tạo)
+            if ($teacher && $teacher->id !== $user->id) {
+                Notification::create([
+                    'user_id' => $teacher->id,
+                    'title'   => '📚 Bộ thẻ mới được tạo',
+                    'message' => $user->name . ' đã tạo bộ flashcard "' . $flashcardSet->title . '" trong lớp "' . $classroom->name . '"',
+                ]);
+            }
+
+            // Thông báo cho học sinh trong lớp (trừ người tạo)
+            $students = $classroom->members()
+                ->whereKeyNot($user->id)
+                ->whereKeyNot($classroom->teacher_id)
+                ->get();
+            foreach ($students as $student) {
+                Notification::create([
+                    'user_id' => $student->id,
+                    'title'   => '🆕 Bộ thẻ mới',
+                    'message' => 'Một bộ flashcard mới "' . $flashcardSet->title . '" đã được thêm vào lớp "' . $classroom->name . '"',
+                ]);
+            }
+        }
 
         return redirect()->route('user.dashboard')->with('success', 'Thêm thẻ thành công!');
     }
@@ -344,10 +375,9 @@ class FlashcardDefineEssayController extends Controller
             return redirect()->route('user.dashboard')->with('error', 'Không tìm thấy câu hỏi!');
         }
 
-        // Lưu topic_id để redirect sau khi xóa
         $topicId = $question->topic_id;
 
-        // Xoá dữ liệu liên quan
+        // Xoá dữ liệu liên quan tới câu hỏi
         DifficultCard::where('question_id', $question->id)->delete();
         AnswerUser::where('question_id', $question->id)->delete();
 
@@ -361,9 +391,28 @@ class FlashcardDefineEssayController extends Controller
         $question->answers()->delete();
         $question->delete();
 
+        // Nếu không còn câu hỏi nào trong card -> xóa card
         $remainingQuestions = Question::where('card_id', $card_id)->count();
         if ($remainingQuestions == 0) {
             Card::where('id', $card_id)->delete();
+
+            // Tìm flashcard set có chứa card này
+            $flashcardSets = FlashcardSet::where('question_ids', 'LIKE', "%$card_id%")->get();
+
+            foreach ($flashcardSets as $set) {
+                $cardIds = array_filter(explode(',', $set->question_ids));
+                $cardIds = array_diff($cardIds, [$card_id]);
+
+                if (empty($cardIds)) {
+                    // Nếu flashcard set không còn card nào -> xóa luôn
+                    ClassroomFlashcard::where('flashcard_set_id', $set->id)->delete();
+                    $set->delete();
+                } else {
+                    // Cập nhật lại danh sách card_ids
+                    $set->question_ids = implode(',', $cardIds);
+                    $set->save();
+                }
+            }
         }
 
         // Tìm các card còn lại trong topic này

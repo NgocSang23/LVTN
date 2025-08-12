@@ -7,70 +7,131 @@ use Illuminate\Support\Facades\Log;
 
 class FlashcardSuggest
 {
-    public function generate(string $subject, int $count = 3, array $excludedQuestions = []): array
+    private function isDuplicateQuestion(string $question, array $existingQuestions): bool
     {
-        $count = min($count, 50);
+        $normalize = function ($text) {
+            return mb_strtolower(
+                preg_replace('/\s+/u', ' ', trim($text)),
+                'UTF-8'
+            );
+        };
 
-        $excludedText = '';
-        if (!empty($excludedQuestions)) {
-            $excludedText = 'Danh sách các câu hỏi đã tồn tại, tuyệt đối không được lặp lại hoặc tương tự dưới bất kỳ hình thức nào (ý nghĩa, từ ngữ gần giống):' . PHP_EOL;
-            foreach ($excludedQuestions as $question) {
-                $excludedText .= '- ' . $question . PHP_EOL;
+        $normalizedNew = $normalize($question);
+
+        foreach ($existingQuestions as $old) {
+            $normalizedOld = $normalize($old);
+
+            // 1. Exact match sau khi normalize
+            if ($normalizedNew === $normalizedOld) {
+                return true;
+            }
+
+            // 2. Fuzzy match: giống nhau > 85%
+            // Có thể tăng ngưỡng này lên 90 nếu muốn chống trùng lặp chặt chẽ hơn,
+            // nhưng cần cân nhắc tránh loại bỏ các câu hỏi hợp lệ.
+            similar_text($normalizedNew, $normalizedOld, $percent);
+            if ($percent >= 85) { // Giữ nguyên 85% là một khởi đầu tốt.
+                return true;
             }
         }
 
-        $prompt = <<<PROMPT
-            Trả lời bằng tiếng Việt. Tuyệt đối không giải thích gì thêm.
+        return false;
+    }
 
-            Bạn là trợ lý học tập. Hãy tạo chính xác $count thẻ flashcard hoàn toàn mới cho môn học "$subject".
+    public function generate(string $subject, int $count = 50, array $excludedQuestions = []): array
+    {
+        // Giới hạn số lượng flashcard tối đa có thể tạo trong một lần
+        $count = min($count, 50);
+        $results = [];
+        $remaining = $count;
+        $maxLoops = 10; // Số vòng lặp tối đa để tránh vòng lặp vô tận
+        $loop = 0;
+        $requestBatchSize = 10; // Số lượng thẻ yêu cầu AI tạo trong mỗi lần gọi API
 
-            Yêu cầu:
-            - Không lặp lại hoặc trùng khái niệm với các câu hỏi đã có.
-            - Không sử dụng lại từ ngữ, cấu trúc, hoặc ý tưởng tương tự.
-            - Mỗi thẻ phải có nội dung riêng biệt hoàn toàn.
-            - Các câu hỏi và câu trả lời từ cấp 3 trở lên tới đại học, liên quan tới giáo dục Việt Nam
-            - Mỗi thẻ gồm:
-            - "question": Câu hỏi ngắn, là một thuật ngữ hoặc khái niệm.
-            - "answer": Định nghĩa rõ ràng, ngắn gọn, dễ hiểu.
+        while ($remaining > 0 && $loop < $maxLoops) {
+            $loop++;
 
-            ⚠️ Bắt buộc trả về đúng định dạng mảng JSON gồm $count phần tử. Không ít hơn, không nhiều hơn. Không kèm lời giải thích.
+            // Xác định số lượng thẻ cần yêu cầu trong lượt này, không vượt quá $requestBatchSize
+            $currentRequestCount = min($remaining, $requestBatchSize);
 
-            Ví dụ định dạng JSON:
+            $excludedText = '';
+            if (!empty($excludedQuestions)) {
+                $excludedText = 'Dưới đây là các khái niệm đã có. **Tuyệt đối không được tạo câu hỏi mới trùng lặp về ý nghĩa, khái niệm hoặc thuật ngữ với bất kỳ câu hỏi nào trong danh sách này, kể cả khi diễn đạt bằng từ ngữ khác hoặc dịch sang ngôn ngữ khác:**' . PHP_EOL;
+                foreach ($excludedQuestions as $question) {
+                    $excludedText .= '- ' . $question . PHP_EOL;
+                }
+            }
 
-            [
-            {
-                "question": "Khái niệm 1",
-                "answer": "Định nghĩa tương ứng"
-            },
-            ...
-            ]
+            $prompt = <<<PROMPT
+                Trả lời bằng tiếng Việt. Không giải thích gì thêm.
 
-            $excludedText
-        PROMPT;
+                Bạn là trợ lý học tập. Hãy tạo **tối đa** $currentRequestCount thẻ flashcard hoàn toàn mới cho môn "$subject".
 
-        Log::info("⚠️ Bỏ qua cache để lấy flashcard mới");
-        $estimatedTokens = min($count * 250, 3500);
-        Log::info("🧮 Token estimation", ['tokens' => $estimatedTokens]);
+                Yêu cầu:
+                - Câu hỏi và câu trả lời từ cấp 3 trở lên tới đại học, liên quan tới giáo dục Việt Nam.
+                - Không lặp lại ý nghĩa, từ ngữ hoặc khái niệm với danh sách đã có (kể cả dịch sang ngôn ngữ khác hoặc diễn đạt khác).
+                - Mỗi thẻ gồm:
+                    - "question": Câu hỏi ngắn hoặc thuật ngữ.
+                    - "answer": Định nghĩa rõ ràng, ngắn gọn, dễ hiểu.
+                - Nếu không thể đủ $currentRequestCount, hãy tạo số lượng nhiều nhất có thể.
+                - Trả về duy nhất mảng JSON.
 
-        $client = new TogetherClient();
-        $raw = $client->chat($prompt, null, $estimatedTokens);
+                Ví dụ:
+                [
+                    {"question": "Khái niệm 1", "answer": "Định nghĩa 1"},
+                    {"question": "Khái niệm 2", "answer": "Định nghĩa 2"}
+                ]
 
-        if (empty($raw)) {
-            return ['error' => 'AI không trả về nội dung.'];
+                $excludedText
+            PROMPT;
+
+            Log::info("⚠️ Lấy flashcard mới (yêu cầu $currentRequestCount thẻ, vòng $loop)");
+            // Ước tính token dựa trên số lượng thẻ yêu cầu
+            $estimatedTokens = min($currentRequestCount * 250, 3500);
+
+            $client = new TogetherClient(); // Giả định TogetherClient đã được định nghĩa
+            $raw = $client->chat($prompt, null, $estimatedTokens);
+
+            if (empty($raw)) {
+                Log::warning("⚠️ AI không trả về nội dung ở vòng $loop.");
+                break;
+            }
+
+            $json = $this->extractJsonArray($raw);
+            if (!$json || !is_array($json)) {
+                Log::error("❌ Không trích xuất được JSON hợp lệ", ['raw' => $raw]);
+                break;
+            }
+
+            $newItems = [];
+            foreach ($json as $item) {
+                if (!isset($item['question'], $item['answer'])) {
+                    continue;
+                }
+                // Kiểm tra trùng lặp trước khi thêm vào danh sách kết quả và danh sách loại trừ
+                if (!$this->isDuplicateQuestion($item['question'], $excludedQuestions)) {
+                    $newItems[] = $item;
+                    // Thêm câu hỏi mới vào danh sách loại trừ để tránh trùng lặp trong các vòng tiếp theo
+                    $excludedQuestions[] = $item['question'];
+                } else {
+                    Log::warning("🔁 Bỏ câu trùng hoặc tương tự: " . $item['question']);
+                }
+            }
+
+            $results = array_merge($results, $newItems);
+            $remaining = $count - count($results);
+
+            Log::info("✅ Đã thu được " . count($results) . " / $count thẻ flashcard (vòng $loop).");
+
+            // Nếu không có thẻ mới nào được tạo ở vòng này, dừng để tránh lặp vô hạn
+            if (count($newItems) === 0 && $remaining > 0) {
+                Log::warning("⚠️ Không tạo được câu hỏi mới ở vòng $loop, dừng.");
+                break;
+            }
         }
 
-        $json = $this->extractJsonArray($raw);
-        if (!$json || !is_array($json)) {
-            Log::error("❌ Không trích xuất được JSON hợp lệ", ['raw' => $raw]);
-            return ['error' => 'Không trích xuất được JSON hợp lệ.'];
-        }
-
-        if (count($json) !== $count) {
-            Log::warning("⚠️ AI trả về số lượng không đúng", ['expected' => $count, 'actual' => count($json)]);
-            return ['error' => "AI không trả về đúng $count thẻ flashcard."];
-        }
-
-        return $json;
+        // Trả về số lượng thẻ flashcard theo yêu cầu ban đầu ($count)
+        return array_slice($results, 0, $count);
     }
 
     public function suggestTopics(string $subject): array
