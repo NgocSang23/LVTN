@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * 
+ *
  *
  * @property int $id
  * @property string $title
@@ -38,8 +38,8 @@ class Topic extends Model
 
     protected $fillable = [
         'title',
-        'embedding' => 'array',
-        'subject_id '
+        'subject_id',
+        'embedding'
     ];
 
     protected $casts = [

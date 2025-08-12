@@ -19,7 +19,7 @@
 
             <div class="mb-3">
                 <label for="code" class="form-label fw-semibold">Mã lớp học</label>
-                <input type="text" name="code" id="code" class="form-control text-uppercase"
+                <input type="text" name="code" id="code" class="form-control text-uppercase" autocomplete="off"
                     placeholder="Nhập mã lớp (ví dụ: AB12CD)" maxlength="6" style="border-radius: 8px;" required>
                 @error('code')
                     <small class="text-danger">{{ $message }}</small>

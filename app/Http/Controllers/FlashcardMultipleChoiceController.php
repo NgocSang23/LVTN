@@ -57,7 +57,11 @@ class FlashcardMultipleChoiceController extends Controller
         $topic = Topic::firstOrCreate(
             [
                 'title' => $data['topic_title'],
-                'subject_id' => $data['subject_id']
+                'subject_id' => (int) $data['subject_id'], // ép int để tránh cast lỗi
+            ],
+            [
+                'title' => $data['topic_title'],
+                'subject_id' => (int) $data['subject_id'],
             ]
         );
 
@@ -65,7 +69,7 @@ class FlashcardMultipleChoiceController extends Controller
             'title' => '',
             'content' => $data['test_content'],
             'time' => gmdate("H:i:s", $data['test_time'] * 60),
-            'user_id' => auth()->id()
+            'user_id' => auth()->id(),
         ]);
 
         if ($request->has('classroom_ids')) {
@@ -253,6 +257,8 @@ class FlashcardMultipleChoiceController extends Controller
         DB::table('test__multiple_questions')->where('test_id', $test->id)->delete();
         DB::table('options')->whereIn('id', $optionId)->delete();
         DB::table('multiple_questions')->where('topic_id', $test->id)->delete();
+        DB::table('histories')->where('test_id', $test->id)->delete();
+
         $test->QuestionNumbers()->delete();
         $test->delete();
 
