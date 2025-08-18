@@ -151,23 +151,23 @@ class Ochat
 
             // Gửi prompt cho AI nếu không khớp đủ
             $prompt = <<<EOT
-Bạn là hệ thống đánh giá tự động. Hãy chấm điểm câu trả lời của học sinh và chỉ trả về đúng một object JSON hợp lệ, không có mẫu, không có giải thích.
+            Bạn là hệ thống đánh giá tự động. Hãy chấm điểm câu trả lời của học sinh và chỉ trả về đúng một object JSON hợp lệ, không có mẫu, không có giải thích.
 
-JSON phải có đầy đủ các trường sau:
-{
-"percent": 0-100,
-"category": "Chính xác" | "Một phần" | "Sai",
-"feedback": "Một câu ngắn, dưới 20 từ"
-}
+            JSON phải có đầy đủ các trường sau:
+            {
+            "percent": 0-100,
+            "category": "Chính xác" | "Một phần" | "Sai",
+            "feedback": "Một câu ngắn, dưới 20 từ"
+            }
 
-Chỉ được trả về JSON, không có bất kỳ giải thích nào bên ngoài. Không được thiếu dấu { hoặc }.
+            Chỉ được trả về JSON, không có bất kỳ giải thích nào bên ngoài. Không được thiếu dấu { hoặc }.
 
-Chỉ cho điểm 100 nếu học sinh trả lời đầy đủ nội dung trong đáp án. Nếu đúng một phần, cho 50 hoặc 75. Nếu sai hoàn toàn, cho 0.
+            Chỉ cho điểm 100 nếu học sinh trả lời đầy đủ nội dung trong đáp án. Nếu đúng một phần, cho 50 hoặc 75. Nếu sai hoàn toàn, cho 0.
 
-Câu hỏi: "$question"
-Học sinh trả lời: "$userAnswer"
-Đáp án đúng: "$correctAnswer"
-EOT;
+            Câu hỏi: "$question"
+            Học sinh trả lời: "$userAnswer"
+            Đáp án đúng: "$correctAnswer"
+            EOT;
 
             $result = $this->send($prompt);
 

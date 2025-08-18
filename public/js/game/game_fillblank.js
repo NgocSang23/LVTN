@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // `id` của input là duy nhất cho mỗi câu hỏi để dễ dàng truy cập.
         // `value` của input được đặt là `savedAnswer` để giữ lại câu trả lời nếu người dùng quay lại câu hỏi trước.
         const questionHtml = q.question.replace(
-            "___",
+            /___/g,
             `<input type="text" class="fill-blank-input" id="userAnswer_${index}" value="${savedAnswer}" />`
         );
 
@@ -68,7 +68,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     </button>
                     <button id="nextBtn">
                         ${
-                            index === quizData.length - 1 ? "Hoàn tất" : "Tiếp theo"
+                            index === quizData.length - 1
+                                ? "Hoàn tất"
+                                : "Tiếp theo"
                         } <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>

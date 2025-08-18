@@ -44,9 +44,9 @@ class FlashcardSuggest
         $count = min($count, 50);
         $results = [];
         $remaining = $count;
-        $maxLoops = 10; // Số vòng lặp tối đa để tránh vòng lặp vô tận
+        $maxLoops = 15; // Số vòng lặp tối đa để tránh vòng lặp vô tận
         $loop = 0;
-        $requestBatchSize = 10; // Số lượng thẻ yêu cầu AI tạo trong mỗi lần gọi API
+        $requestBatchSize = 15; // Số lượng thẻ yêu cầu AI tạo trong mỗi lần gọi API
 
         while ($remaining > 0 && $loop < $maxLoops) {
             $loop++;

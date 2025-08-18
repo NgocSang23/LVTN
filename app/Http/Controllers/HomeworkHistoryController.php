@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Test;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -241,4 +242,50 @@ class HomeworkHistoryController extends Controller
             'message' => 'Lưu lịch sử nộp bài thành công',
         ]);
     }
+
+    // public function detailMultipleChoice($test_id)
+    // {
+    //     $userId = Auth::id();
+
+    //     // Lấy đề thi (chỉ thông tin cơ bản, không cần eager load options)
+    //     $test = Test::findOrFail($test_id);
+
+    //     // Lấy lịch sử làm bài
+    //     $attempts = DB::table('histories')
+    //         ->where('user_id', $userId)
+    //         ->where('test_id', $test_id)
+    //         ->orderBy('created_at', 'desc')
+    //         ->get();
+
+    //     if ($attempts->isEmpty()) {
+    //         return redirect()
+    //             ->route('user.history', ['tab' => 'multiple'])
+    //             ->with('message', 'Bạn chưa có lịch sử làm bài cho đề thi này.');
+    //     }
+
+    //     $latest = $attempts->first();
+
+    //     // Lấy kết quả làm bài (questions + options)
+    //     $results = DB::table('test_results')
+    //         ->join('options', 'test_results.option_id', '=', 'options.id')
+    //         ->join('multiple_questions', 'test_results.multiplequestion_id', '=', 'multiple_questions.id')
+    //         ->where('test_results.multiplequestion_id ', $test_id)
+    //         ->where('test_results.user_id', $userId)
+    //         ->select(
+    //             'multiple_questions.id as question_id',
+    //             'multiple_questions.content',
+    //             'options.id as option_id',
+    //             'options.content',
+    //             'options.id',
+    //             'test_results.answer'
+    //         )
+    //         ->get()
+    //         ->groupBy('question_id');
+
+    //     return view('user.homework_history.history_multiple_choice_detail', [
+    //         'test'      => $test,
+    //         'history'   => $latest,
+    //         'questions' => $results,
+    //     ]);
+    // }
 }

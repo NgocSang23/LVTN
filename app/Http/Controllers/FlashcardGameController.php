@@ -158,7 +158,15 @@ class FlashcardGameController extends Controller
             $question = $card->question;
             $answers = $question?->answers;
 
-            if (!$question || !$answers || $answers->isEmpty()) continue;
+            if (!$question || !$answers || $answers->isEmpty()) {
+                $quizData->push([
+                    'question' => '___',
+                    'type' => 'fill_blank',
+                    'correct_answer_text' => '',
+                    'display_question' => $question?->content ?? 'Câu hỏi không hợp lệ',
+                ]);
+                continue;
+            }
 
             $answerText = trim($answers->first()->content);
 
@@ -177,7 +185,11 @@ class FlashcardGameController extends Controller
             }
 
             $words = preg_split('/\s+/', $answerText);
-            if (count($words) < 3) continue;
+            if (count($words) < 3) {
+                $correctAnswer = $words[0];
+                $words[0] = '___';
+                $questionWithBlank = implode(' ', $words);
+            }
 
             $indexToBlank = rand(0, count($words) - 1);
             $correctAnswer = $words[$indexToBlank];
@@ -188,7 +200,7 @@ class FlashcardGameController extends Controller
                 'question' => $questionWithBlank,
                 'type' => 'fill_blank',
                 'correct_answer_text' => $correctAnswer,
-                'display_question' => 'Điền vào chỗ trống:',
+                'display_question' => $question->content ?? 'Điền vào chỗ trống:',
             ]);
         }
 

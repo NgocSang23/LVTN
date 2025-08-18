@@ -23,7 +23,7 @@ function renderEssay(index) {
     questionElem.innerHTML = essayQuestions[index].content;
 
     // Hiển thị câu trả lời đã lưu của người dùng (nếu có).
-    answerElem.value = answers[index];
+    answerElem.value = "";
 
     // Reset kết quả của lần kiểm tra trước đó mỗi khi chuyển sang câu hỏi mới.
     const resultContainer = document.querySelector("#resultContainer"); // Khu vực hiển thị phản hồi từ AI
