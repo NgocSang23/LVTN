@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Laravel + Vue + Vite</title>
+    <title>Admin</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <meta charset="UTF-8" />
     <link rel="icon" href="/assets/img/icon.jpg" />
