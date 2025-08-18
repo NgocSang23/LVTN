@@ -56,11 +56,7 @@ class Card extends Model
 
     public function getFlashcardSetAttribute()
     {
-        return FlashcardSet::where('is_public', 1)
-            ->where('is_approved', 1)
-            ->get()
-            ->first(function ($set) {
-                return in_array($this->question?->id, explode(',', $set->question_ids));
-            });
+        return FlashcardSet::whereRaw("FIND_IN_SET(?, question_ids)", [$this->question?->id])
+            ->first();
     }
 }

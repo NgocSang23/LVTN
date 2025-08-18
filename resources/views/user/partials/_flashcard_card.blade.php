@@ -29,13 +29,10 @@
                         🌐 Tạo mã QR
                     </a>
                 </li> --}}
-                @if (
-                    !empty($card_define['first_card']->flashcardSet) &&
-                        $card_define['first_card']->flashcardSet->is_public &&
-                        $card_define['first_card']->flashcardSet->is_approved)
+                @if ($card_define['is_public_and_approved'])
                     <li>
                         <a class="dropdown-item text-success w-100 text-start"
-                            href="{{ route('flashcard.share', ['slug' => $card_define['first_card']->flashcardSet->slug]) }}">
+                            href="{{ route('flashcard.share', ['slug' => $card_define['public_set_slug']]) }}">
                             🔗 Xem chia sẻ công khai
                         </a>
                     </li>

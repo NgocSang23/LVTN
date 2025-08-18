@@ -21,7 +21,7 @@ class UserController extends Controller
 
         // Lấy danh sách các card ID công khai từ FlashcardSet
         $public_card_ids = FlashcardSet::where('is_public', 1)
-            ->where('is_approved', 1)  // thêm điều kiện approved
+            ->where('is_approved', 1)
             ->pluck('question_ids')
             ->flatMap(fn($ids) => explode(',', $ids))
             ->map(fn($id) => (int) trim($id))
@@ -38,21 +38,57 @@ class UserController extends Controller
         // Thẻ của bạn — tất cả thẻ bạn tạo, public hay không public
         $my_flashcards = $all_cards->filter(fn($card) => $card->user_id === $userId)
             ->groupBy(fn($card) => $card->question->topic->id)
-            ->map(fn($group) => [
-                'first_card' => $group->first(),
-                'card_ids' => $group->pluck('id')->implode(','),
-                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')),
-            ])
+            ->map(function ($group) {
+                $cardIds = $group->pluck('id')->toArray();
+
+                $publicSet = FlashcardSet::where('is_public', 1)
+                    ->where('is_approved', 1)
+                    ->where(function ($query) use ($cardIds) {
+                        foreach ($cardIds as $id) {
+                            $query->where('question_ids', 'like', "%$id%");
+                        }
+                    })
+                    ->first();
+
+                $isPublicAndApproved = (bool) $publicSet;
+                $publicSetSlug = $publicSet ? $publicSet->slug : null;
+
+                return [
+                    'first_card' => $group->first(),
+                    'card_ids' => implode(',', $cardIds),
+                    'encoded_ids' => base64_encode(implode(',', $cardIds)),
+                    'is_public_and_approved' => $isPublicAndApproved,
+                    'public_set_slug' => $publicSetSlug
+                ];
+            })
             ->take(6);
 
         // Tất cả flashcard công khai (của tất cả user, bao gồm cả user hiện tại)
         $community_flashcards = $all_cards->filter(fn($card) => in_array($card->id, $public_card_ids))
             ->groupBy(fn($card) => $card->question->topic->id)
-            ->map(fn($group) => [
-                'first_card' => $group->first(),
-                'card_ids' => $group->pluck('id')->implode(','),
-                'encoded_ids' => base64_encode($group->pluck('id')->implode(',')),
-            ])
+            ->map(function ($group) {
+                $cardIds = $group->pluck('id')->toArray();
+
+                $publicSet = FlashcardSet::where('is_public', 1)
+                    ->where('is_approved', 1)
+                    ->where(function ($query) use ($cardIds) {
+                        foreach ($cardIds as $id) {
+                            $query->where('question_ids', 'like', "%$id%");
+                        }
+                    })
+                    ->first();
+
+                $isPublicAndApproved = (bool) $publicSet;
+                $publicSetSlug = $publicSet ? $publicSet->slug : null;
+
+                return [
+                    'first_card' => $group->first(),
+                    'card_ids' => implode(',', $cardIds),
+                    'encoded_ids' => base64_encode(implode(',', $cardIds)),
+                    'is_public_and_approved' => $isPublicAndApproved,
+                    'public_set_slug' => $publicSetSlug
+                ];
+            })
             ->take(6);
 
         // Lấy bài kiểm tra do chính user hiện tại tạo
